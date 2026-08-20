@@ -70,13 +70,17 @@ source "/home/gustavo/.espressif/tools/activate_idf_v6.0.2.sh"
 ((nil
   . ((eglot-server-programs
       . ((c-ts-mode
-          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"))
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))
          (c-mode
-          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"))
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))
          (c++-ts-mode
-          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"))
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))
          (c++-mode
-          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd")))))))
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))))))))
 ```
 
 1. Main CLI Commands
