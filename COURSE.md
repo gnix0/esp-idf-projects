@@ -321,3 +321,22 @@ void app_main(void)
   2. **Queues (`xQueuesSendFromISR`):** the ISR sends data (e.g., a sensor reading, event type) to a queue. A task waits (`xQueueReceived`) to process the data from the queue. Useful when data needs to be passed from the ISR to the task.
   3. **Task Notifications (`xTaskNotifyFromISR`, `xTaskNotifyGiveFromISR`):** a direct-to-task signaling mechanism, often faster and more memory-efficient than queues or semaphores for simple signals or passing single values. A task waits using `ulTaskNotifyTake` or `xTaskNotifyWait`.
   4. **Event Groups (`xEventGroupSetBitsFromISR`):** useful for signaling multiple events or conditions. A task waits using `xEventGroupWaitBits`.
+
+---
+
+#### Aside: configuring and using GPIO with ESP-IDF
+
+```c
+gpio_reset_pin(gpio_num_t gpio_num); // resets a gpio to default state
+gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mode (overwrites all current modes that have been applied on the IO pin
+```
+
+---
+
+#### Aside: bitmasks in C
+
+
+
+---
+
+## Components - Part I

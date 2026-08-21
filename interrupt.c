@@ -28,23 +28,39 @@ static void button_task(void *pvparameters);
 
 void app_main(void)
 {
-    gpio_reset_pin(LED_PIN_1);
-    gpio_set_direction(LED_PIN_1, GPIO_MODE_OUTPUT);
-    gpio_reset_pin(LED_PIN_2);
-    gpio_set_direction(LED_PIN_2, GPIO_MODE_OUTPUT);
+    gpio_config_t io_config = {};
+
+    /* gpio_reset_pin(LED_PIN_1); */
+    /* gpio_set_direction(LED_PIN_1, GPIO_MODE_OUTPUT); */
+    /* gpio_reset_pin(LED_PIN_2); */
+    /* gpio_set_direction(LED_PIN_2, GPIO_MODE_OUTPUT); */
+
+    io_config.pin_bit_mask = (1ULL<<LED_PIN_1)|(1ULL<<LED_PIN_2);
+    io_config.mode = GPIO_MODE_OUTPUT;
+    io_config.pull_up_en = GPIO_PULLUP_DISABLE;
+    io_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_config.intr_type = GPIO_INTR_DISABLE;
+    gpio_config(&io_config);
 
     gpio_set_level(LED_PIN_1, 0);
     gpio_set_level(LED_PIN_2, 0);
 
-    gpio_reset_pin(BUTTON_PIN_1);
-    gpio_set_direction(BUTTON_PIN_1, GPIO_MODE_INPUT);
-    gpio_pullup_en(BUTTON_PIN_1);
-    gpio_set_intr_type(BUTTON_PIN_1, GPIO_INTR_NEGEDGE); // Set to falling edge
+    /* gpio_reset_pin(BUTTON_PIN_1); */
+    /* gpio_set_direction(BUTTON_PIN_1, GPIO_MODE_INPUT); */
+    /* gpio_pullup_en(BUTTON_PIN_1); */
+    /* gpio_set_intr_type(BUTTON_PIN_1, GPIO_INTR_NEGEDGE); // Set to falling edge */
 
-    gpio_reset_pin(BUTTON_PIN_2);
-    gpio_set_direction(BUTTON_PIN_2, GPIO_MODE_INPUT);
-    gpio_pullup_en(BUTTON_PIN_2);
-    gpio_set_intr_type(BUTTON_PIN_2, GPIO_INTR_NEGEDGE); // Set to falling edge
+    /* gpio_reset_pin(BUTTON_PIN_2); */
+    /* gpio_set_direction(BUTTON_PIN_2, GPIO_MODE_INPUT); */
+    /* gpio_pullup_en(BUTTON_PIN_2); */
+    /* gpio_set_intr_type(BUTTON_PIN_2, GPIO_INTR_NEGEDGE); // Set to falling edge */
+
+    io_config.pin_bit_mask = (1ULL<<BUTTON_PIN_1)|(1ULL<<BUTTON_PIN_2);
+    io_config.mode = GPIO_MODE_INPUT;
+    io_config.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
+    io_config.intr_type = GPIO_INTR_NEGEDGE;
+    gpio_config(&io_config);
 
     gpio_evt_queue = xQueueCreate(1, sizeof(uint32_t));
     xTaskCreate(button_task, "BUTTON TASK", 2048, NULL, 2, NULL);
