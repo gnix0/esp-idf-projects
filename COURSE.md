@@ -339,4 +339,7 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
 
 ---
 
+
 ## Components - Part I
+
+> IMPORTATNT: after creating a new component (or more), it is necessary to reconfigure the project using `idf.py reconfigure` for properly applying the new changes on the project's structure. Otherwise, the build will fail with errors.
