@@ -12,8 +12,8 @@
 #include <stdlib.h>
 #include <stdbool.h>
 
-#define RELAY_PIN_1 5
-#define RELAY_PIN_2 19
+#define RELAY_PIN_1  5
+#define RELAY_PIN_2  19
 #define BUTTON_PIN_1 22
 #define BUTTON_PIN_2 23
 
@@ -32,11 +32,11 @@ void app_main(void)
     relay_init(&relay2, RELAY_PIN_2);
 
     gpio_config_t button_config = {};
-    button_config.pin_bit_mask = (1ULL<<BUTTON_PIN_1)|(1ULL<<BUTTON_PIN_2);
-    button_config.mode = GPIO_MODE_INPUT;
-    button_config.pull_up_en = GPIO_PULLUP_ENABLE;
-    button_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    button_config.intr_type = GPIO_INTR_NEGEDGE;
+    button_config.pin_bit_mask  = (1ULL<<BUTTON_PIN_1)|(1ULL<<BUTTON_PIN_2);
+    button_config.mode          = GPIO_MODE_INPUT;
+    button_config.pull_up_en    = GPIO_PULLUP_ENABLE;
+    button_config.pull_down_en  = GPIO_PULLDOWN_DISABLE;
+    button_config.intr_type     = GPIO_INTR_NEGEDGE;
     gpio_config(&button_config);
 
     gpio_evt_queue = xQueueCreate(1, sizeof(uint64_t));
