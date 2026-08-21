@@ -123,7 +123,7 @@ idf.py gdb # initializes GDB for project-debugging
 
 idf.py gdbgui # initializes a GUI for debugging with GDB
 
-idf.py create-component <my_component> # creates a new component inside an existing ESP-IDF project, creating the basics components/my_component structure
+idf.py -C components create-component <my_component> # creates a new component inside an existing ESP-IDF project, creating the basic components/my_component structure
 ```
 
 3. Logging
