@@ -12,6 +12,8 @@ and optimizing semiconductor die area compared to traditional motherboard-based 
 - Connectivity: _Wi-Fi, Bluetooth Classic/Low-Energy (LE)/Mesh, IEEE 802.15.4 (Thread, Matter,
 and Zigbee)_.
 
+> **IMPORTANT:** _the materials in this file that contain SoC-specific details will do so according to the ESP32-C6 SoC. For other SoCs/modules, check their respective documentations as described below._
+
 
 ## Documentations
 
@@ -25,48 +27,34 @@ and Zigbee)_.
    - [Espressif's Blog](https://developer.espressif.com/blog/)
    - [ESP32 Forums](https://esp32.com/)
 
-
-## Franzininho WiFi LAB01
-
-#### Resources:
-
-1. MCU ESP32-S2:
-   - Xtensa single-core 32-bit LX7, operating up to 240MHz.
-   - 128KB ROM, 320KB SRAM, 16KB SRAM in the RTC, 4MB Flash memory.
-   - WiFi 802.11 b/g/n.
-   - GPIO, SPI, LCD, UART, I2C, I2S, Camera, IR, pulse counter, PWM LED, TWAI(CAN),
-   USB 1.1 OTG, ADC, DAC, touch, internal temperature sensor.
-
-2. Pinout:
-   - Buses: 40 pins divided into 2x20 buses of 2.54mm.
-   - 35 GPIOS.
-   - Breadboard compatibility.
-   
-3. 2 general use-case LEDs.
-
-4. 1 reset and 1 boot buttons.
-
-5. USB: micro USB - OTG 1.1 connector.
-
-6. Power Supply:
-   - 5V through USB connection.
-   - 5V and GND through bus.
-   - 3V3 and GND through bus.
-
-7. Programming: ESP-IDF, Arduino, CircuitPython, MicroPython, Zephyr, NuttX.
-
-
 ## ESP-IDF Basics
 
 - Activate env:
 
 ```bash
-source "/home/gustavo/.espressif/tools/activate_idf_v6.0.2.sh"
+get_idf
 ```
 
 - Set this in a `.dir-locals.el` file at the root of an ESP-IDF project:
 
 ```elisp
+# Work laptop
+((nil
+  . ((eglot-server-programs
+      . ((c-ts-mode
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))
+         (c-mode
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))
+         (c++-ts-mode
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))
+         (c++-mode
+          . ("/home/gustavo/.espressif/tools/esp-clang/esp-19.1.2_20250312/esp-clang/bin/clangd"
+             "--query-driver=/home/gustavo/.espressif/tools/xtensa-esp-elf/esp-14.2.0_20260121/xtensa-esp-elf/bin/xtensa-esp32-elf-gcc"))))))))
+			 
+# Personal laptop
 ((nil
   . ((eglot-server-programs
       . ((c-ts-mode
@@ -344,6 +332,7 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
 
 > IMPORTATNT: after creating a new component (or more), it is necessary to reconfigure the project using `idf.py reconfigure` for properly applying the new changes on the project's structure. Otherwise, the build will fail with errors.
 
+
 ## PWM - Pulse Width Modulation
 
 - PWM is a power-control technique that regulates the effective output of an electrical signal by rapidly switching it on and off at a fixed frequency. By adjusting the ratio on the "on" time to the total cycle period, a digital source can emulate varying analog voltage levels, thereby controlling the average energy delivered to a load. More broadly, modulation here refers to altering or encoding information onto an electrical waveform to influence the behavior of a circuit or system. In practical electronics, this means shaping a signal so it can transmit data or manage how much voltage or current reaches a device. This is widely applied in motor drives, dimmable lighting, audio systems, and power-conversion or battery-charging circuits.
@@ -369,3 +358,31 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
   2. Configure the channel, associating it with the timer and the GPIO used for PWM signal output.
   3. Change the PWM signal that controls the output to adjust the LED's intensity. This can be done entirely under software control, or using hardware fading functions.
   4. (Optional) Set up an interrupt on fase end.
+
+
+## ADC - Analog to Digital Converters
+
+- Switches, relays, and encoders are inherently digital themselves, and therefore interfacing them with gate circuits is straightforward due to the on/off nature of their signals. However, when analog devices are involved, interfacing becomes more complex.
+
+- To translate analog signals into digital (binary) quantities, an **analog-to-digital converter (ADC)** is used. An ADC inputs an analog _electrical signal_ as voltage or current and outputs a _binary number_. These ADC circuits can be found as _individual ADC ICs_ by themselves or embedded into a microcontroller.
+
+![ADC Diagram](./assets/adc_diagram.png)
+
+
+- How does and ADC work?:
+  1. **Reference voltage:** the voltage mapped to the maximum binary value is called the **reference voltage**. For example, in a 10-bit converter with 5V as the reference voltage, 1111111111 corresponds to 5V and 0000000000 corresponds to 0V. So each binary step up represents around 4.9mV, since there are 1024 possible digits in 10 bits. _This measure of 'volts per bit' is called the resolution of the ADC._ If the voltage changes are below the 4.9mV per step, however, the ADC will be put in a dead zone. The conversion result therefore always has a small error. This can be prevented by using an ADC with a higher resolution. ADCs up to 24 bits are available, though conversion frequencies are low (in the order of a few hertz).
+  2. **Sample speed:** the number of analog-to-digital conversions the converter can make every second is called the **sample speed**. For example, a really good ADC can have a sample rate of 300Ms/s, to be read as _megasamples per second_, meaning a million samples per second. Sample speed depends completely on the type of converter and the needed accuracy. If a very accurate reading is needed, the ADC usually spends more time looking at the input signal (usually a sample-and-hold or integrating type input), and if accuracy is not a concern they can be quick with the reading. As a general rule of thumb, _speed and accuracy are more or less inversely proportional._
+
+- Types of ADCs:
+  1. **Flash ADC:** the simplest type of ADC and the fastest. It consists of a series of comparators with the non-inverting inputs connected to the signal input and the inverting pings connected to a voltage divider ladder. If the voltage is above one of the levels of the ladder, however, all the output bits belot the level are set to one, since the voltage is above the threshold for the bottom comparators. To circumvent this problem, outputs are fed through a priority encoder that converts the output to binary. The speed is limited only by the propagation delays of the comparator and the priority encoder. Accuracy is moderate.
+  2. **Counting/Slope Integration ADCs:** a ramp generating circuit is started at the time of conversion and a binary counter is started at the same time. A comparator detects when the ramp goes above the input voltage and stops the binary counter. The binary count obtained is proportional to the input voltage level. The absolute accuracy of this converter is questionable, however, it gives good resolution and even spacing between the binary steps while being simple to implement. If no chips are available, this circuit can even be made discretely.
+  3. **Successive Approximation ADCs:** among the most accurate types. They consist of a comparator, a simple flash DAC, and a memory register. The device initially assumes all the bits in the register except for the highest significant bit (which is a one) to be zeroes. The register then sends this to the DAC which converts it to an analog voltage, which is compared with the input through the comparator. If the input voltage is higher than the DAC voltage, then the MSB remains one. This process is repeated until all the bits have been set either to zero or one, i.e., the register value exactly equals the input voltage. This ADC is one of the most commonly used where accuracy is needed and speed is not much of a limitation, such as in microcontrollers. SA type ADCs can easily achieve conversion times of a few microseconds.
+
+- **Applications of ADCs include:** _digital osciloscopes and multimeters, microcontrollers, and digital power supplies._
+
+
+## DAC - Digital to Analog Converters
+
+- For scenarios where the inverse task is necessary, that is, digital quantities have to be translated to analog signals, a **digital-to-analog converter (DAC)** is used, that is, _a DAC inputs a binary number and outputs an analog voltage or current._
+
+![DAC Diagram](./assets/dac_diagram.png)
