@@ -356,3 +356,16 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
   
 > Advantages of PWM: the primary benefit is its exceptional efficiency, largely because switching devices dissipate very little power. When the switch is off, virtually no current flows, and when it is fully on, the voltage drop across the device is minimal. This results in significantly reduced conduction and switching losses compared to linear control methods. Additional advantages of PWM include: lower thermal dissipation than linear regulators, thanks to its fully-on/fully-off operation; seamless integration with digital logic, since the control signal is inherently binary; higher overall energy efficiency when regulating motors, lighting, or power converters; precise control of effective voltage or current simply by adjusting the duty cycle; simplified circuitry, often requiring fewer analog components or feedback loops; and borad applicability accross many electronic systems, from power supplies to actuators.
 > Key drawbacks of PWM include: increased switching losses at very high operating frequencies; potential for voltage overshoot or transients; generation of _electromagnetic interference (EMI)_ and harmonics that may require filtering; and greater design complexity in high-power systems, where switching elements and layout considerations become more demanding.
+
+- The _ESP32 LED Control (LEDC)_ peripheral was primarily designed for controlling LED intensity, although it can also be used to generate PWM signals for other purposes. It provides hardware timers and PWM waveform generators. The PWM controller has the following resources:
+  1. **4 independent timers** supporting fractional clock division.
+  2. **8 independent channels** capable of generating eight PWM signals.
+  3. **Hardware PWM fading**, with an interrupt that can be generated when a fade operation is complete.
+  4. **Adjustable PWM output phase.**
+  5. **PWM output in low-power mode.**
+
+- Configuring a LEDC channel:
+  1. Configure the timer, specifying the PWM signal frequency and duty-cycle resolution.
+  2. Configure the channel, associating it with the timer and the GPIO used for PWM signal output.
+  3. Change the PWM signal that controls the output to adjust the LED's intensity. This can be done entirely under software control, or using hardware fading functions.
+  4. (Optional) Set up an interrupt on fase end.
