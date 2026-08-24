@@ -5,6 +5,8 @@
 #include "hal/ledc_types.h"
 #include <stdint.h>
 
+#define PWM_MAX_DUTY ((1U << 10) - 1)
+
 void app_main(void)
 {
     ledc_timer_config_t timer_config = {
@@ -38,13 +40,13 @@ void app_main(void)
 
         duty += direction * 8;
 
-        if (duty >= 1023) {
-            duty = 1023;
+        if (duty >= PWM_MAX_DUTY) {
+            duty = PWM_MAX_DUTY;
             direction = -1;
         } else if (duty == 0) {
             direction = 1;
         }
 
-        vTaskDelay(pdMS_TO_TICKS(20));
+        vTaskDelay(pdMS_TO_TICKS(15));
     }
 }
