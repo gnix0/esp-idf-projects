@@ -14,13 +14,12 @@
 #include "hal/gpio_types.h"
 #include "portmacro.h"
 
-#define LED_PIN_1  5
-#define LED_PIN_2  19
+#define LED_PIN_1    5
+#define LED_PIN_2    19
 #define BUTTON_PIN_1 23
 #define BUTTON_PIN_2 22
 
-static const char TAG[] = "INTERRUPT_TEST";
-
+static const char    TAG[]          = "INTERRUPT_TEST";
 static QueueHandle_t gpio_evt_queue = NULL;
 
 static void gpio_isr_handler(void *arg);
@@ -36,10 +35,10 @@ void app_main(void)
     /* gpio_set_direction(LED_PIN_2, GPIO_MODE_OUTPUT); */
 
     io_config.pin_bit_mask = (1ULL<<LED_PIN_1)|(1ULL<<LED_PIN_2);
-    io_config.mode = GPIO_MODE_OUTPUT;
-    io_config.pull_up_en = GPIO_PULLUP_DISABLE;
+    io_config.mode         = GPIO_MODE_OUTPUT;
+    io_config.pull_up_en   = GPIO_PULLUP_DISABLE;
     io_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    io_config.intr_type = GPIO_INTR_DISABLE;
+    io_config.intr_type    = GPIO_INTR_DISABLE;
     gpio_config(&io_config);
 
     gpio_set_level(LED_PIN_1, 0);
@@ -56,10 +55,10 @@ void app_main(void)
     /* gpio_set_intr_type(BUTTON_PIN_2, GPIO_INTR_NEGEDGE); // Set to falling edge */
 
     io_config.pin_bit_mask = (1ULL<<BUTTON_PIN_1)|(1ULL<<BUTTON_PIN_2);
-    io_config.mode = GPIO_MODE_INPUT;
-    io_config.pull_up_en = GPIO_PULLUP_ENABLE;
+    io_config.mode         = GPIO_MODE_INPUT;
+    io_config.pull_up_en   = GPIO_PULLUP_ENABLE;
     io_config.pull_down_en = GPIO_PULLDOWN_DISABLE;
-    io_config.intr_type = GPIO_INTR_NEGEDGE;
+    io_config.intr_type    = GPIO_INTR_NEGEDGE;
     gpio_config(&io_config);
 
     gpio_evt_queue = xQueueCreate(1, sizeof(uint32_t));

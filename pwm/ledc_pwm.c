@@ -10,21 +10,21 @@
 void app_main(void)
 {
     ledc_timer_config_t timer_config = {
-        .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_num = LEDC_TIMER_0,
-        .freq_hz = 5000,
+        .speed_mode      = LEDC_LOW_SPEED_MODE,
+        .timer_num       = LEDC_TIMER_0,
+        .freq_hz         = 5000,
         .duty_resolution = LEDC_TIMER_10_BIT,
-        .clk_cfg = LEDC_AUTO_CLK
+        .clk_cfg         = LEDC_AUTO_CLK
     };
     ledc_timer_config(&timer_config);
 
     ledc_channel_config_t channel_config = {
-        .channel = LEDC_CHANNEL_0,
+        .channel    = LEDC_CHANNEL_0,
         .speed_mode = LEDC_LOW_SPEED_MODE,
-        .timer_sel = LEDC_TIMER_0,
-        .intr_type = LEDC_INTR_DISABLE,
-        .gpio_num = GPIO_NUM_5,
-        .duty = 0
+        .timer_sel  = LEDC_TIMER_0,
+        .intr_type  = LEDC_INTR_DISABLE,
+        .gpio_num   = GPIO_NUM_5,
+        .duty       = 0
     };
     ledc_channel_config(&channel_config);
 
@@ -41,7 +41,7 @@ void app_main(void)
         duty += direction * 8;
 
         if (duty >= PWM_MAX_DUTY) {
-            duty = PWM_MAX_DUTY;
+            duty      = PWM_MAX_DUTY;
             direction = -1;
         } else if (duty == 0) {
             direction = 1;

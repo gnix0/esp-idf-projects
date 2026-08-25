@@ -30,15 +30,15 @@ void app_main(void)
     gpio_set_level(LED_PIN_1, 0);
     gpio_set_level(LED_PIN_2, 0);
 
-    static bool waiting_for_second_press = false;
-    static unsigned long long first_press_time = 0;
+    static bool               waiting_for_second_press = false;
+    static unsigned long long first_press_time         = 0;
 
     for (;;) {
         if (button_was_pressed()) {
             unsigned long long now = time_ms();
 
             if (!waiting_for_second_press) {
-                first_press_time = now;
+                first_press_time         = now;
                 waiting_for_second_press = true;
             } else {
                 unsigned long long elapsed = now - first_press_time;
@@ -50,14 +50,14 @@ void app_main(void)
                 } else {
                     toggle_leds(&led1_state, &led2_state);
 
-                    first_press_time = now;
+                    first_press_time         = now;
                     waiting_for_second_press = true;
                 }
             }
         }
 
         if (waiting_for_second_press) {
-            unsigned long long now = time_ms();
+            unsigned long long now     = time_ms();
             unsigned long long elapsed = now - first_press_time;
             if (elapsed >= 500) {
                 toggle_leds(&led1_state, &led2_state);
@@ -80,11 +80,9 @@ static unsigned long long time_ms(void)
 
 static bool button_was_pressed(void)
 {
-    static int last_button_state = 1;
-
-    int current_button_state = gpio_get_level(BUTTON_PIN);
-
-    bool pressed = false;
+    static int last_button_state    = 1;
+    int        current_button_state = gpio_get_level(BUTTON_PIN);
+    bool       pressed              = false;
 
     if (last_button_state == 1 && current_button_state == 0) {
         pressed = true;
