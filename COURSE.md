@@ -14,6 +14,13 @@ and Zigbee)_.
 
 > **IMPORTANT:** _the materials in this file that contain SoC-specific details will do so according to the ESP32-C6 SoC. For other SoCs/modules, check their respective documentations as described below._
 
+- **IMPORTANT: ALL PROJECTS MUST HAVE THE FOLLOWING '.clangd' FILE AT ROOT**
+
+```bash
+CompileFlags:
+    Remove: [-f*, -m*]
+```
+
 
 ## Documentations
 
