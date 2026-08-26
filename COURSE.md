@@ -406,3 +406,20 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
   3. **PWM DAC:** a PWM signal looks like a binary waveform with only high and low peaks with a variable duty cycle (ratio of on time to time period). Here, however, this is used with a RC filter to convert the PWM signal into a voltage value by filtering out the AC component and leaving behind the DC component. The voltage output is proportional to the duty cycle of the input, so the higher the duty cycle the greater the output voltage of the filter.
 
 - **Applications of DACs include:** _digital signal processing, and digital power supplies._
+
+## Built-in Temperature Sensor
+
+- The ESP32-C6 (and other models) has a built-in temperature sensor used to measure the chip's internal temperature. The temperature sensor module contains _an 8-bit Sigma-Delta analog-to-digital converter (ADC), and a digital-to-analog converter (DAC) to compensate for the temperature measurement._
+
+> The temperature sensor is designed primarily to measure the temperature **inside** the silicon. The sensor can reflect the temperature changes very well but it can't give a precise measurement value. Hence it is not recommended to use it for ambient temperature measurement.
+
+- Due to restrictions of hardware, the sensor has predefined measurement ranges with specific measurement errors:
+
+| predefined range (C) | error (C) |
+|----------------------|-----------|
+| 50 ~ 125             | < 3       |
+| 20 ~ 100             | < 2       |
+| -10 ~ 80             | < 1       |
+| -30 ~ 50             | < 2       |
+| -40 ~ 20             | < 3       |
+|----------------------|-----------|
