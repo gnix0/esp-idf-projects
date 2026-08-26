@@ -30,7 +30,12 @@ void app_main(void)
     for (;;) {
         for (val = 0; val < 255; ++val) {
             ESP_ERROR_CHECK(dac_oneshot_output_voltage(chan0_handle_val));
-            vTaskDelay(pdMS_TO_TICKS1));
+            vTaskDelay(pdMS_TO_TICKS1);
+        }
+
+        for (val = 0; val < 255; --val) {
+            ESP_ERROR_CHECK(dac_oneshot_output_voltage(chan0_handle_val));
+            vTaskDelay(pdMS_TO_TICKS1);
         }
     }
 }
