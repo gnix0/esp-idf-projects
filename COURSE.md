@@ -392,4 +392,17 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
 
 - For scenarios where the inverse task is necessary, that is, digital quantities have to be translated to analog signals, a **digital-to-analog converter (DAC)** is used, that is, _a DAC inputs a binary number and outputs an analog voltage or current._
 
+- An example use case: a computer stores audio in the form of binary values of the sound wave, so in order to play these back as sound on a speaker, we need analog signals, since the speaker's diaphragm vibrates based on the intensity of the analog signal to produce sound/music.
+
 ![DAC Diagram](./assets/dac_diagram.png)
+
+- How does a DAC work?:
+
+- Since the binary system is positional, the digital-to-analog conversion process can be thought of as a **scaling operation**, where the _binary count is mapped to a certain voltage range, with 0V being the minimum and the maximum voltage being the maximum input binary value._
+
+- Types of DACs:
+  1. **Summing Amplifier:** since digital-to-analog conversion is simply a weighted sum of the binary input, a circuit called a **summing amplifier** is used. This is basically an op-amp amplifier with multiple resistors connecter ot one input. The junction where the resistors meet is called the summing junction or the virtual ground. The binary input goes into the resistors and the analog output is obtained on the outpute of the op-amp. Each resistor has to be carefully chosen and matched in order to obtain an accurate analog output. The more bits there are, the more different values of resistores will be needed, which is not always practical.
+  2. **R-2R Ladder:** the simplest type of DAC. Needs only two resistor values arranged in a ladder, and can be thought of as a somewhat complex voltage divider, in simple terms. The binary input goes into the 2R resistors and the output is obtained at the bottom of the ladder.
+  3. **PWM DAC:** a PWM signal looks like a binary waveform with only high and low peaks with a variable duty cycle (ratio of on time to time period). Here, however, this is used with a RC filter to convert the PWM signal into a voltage value by filtering out the AC component and leaving behind the DC component. The voltage output is proportional to the duty cycle of the input, so the higher the duty cycle the greater the output voltage of the filter.
+
+- **Applications of DACs include:** _digital signal processing, and digital power supplies._
