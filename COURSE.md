@@ -423,3 +423,26 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
 | -30 ~ 50             | < 2       |
 | -40 ~ 20             | < 3       |
 |----------------------|-----------|
+
+## FreeRTOS
+
+#### Introduction
+
+- Common design patterns used in embedded systems development:
+  1. Super loops
+  2. State machines
+  3. Kernel - RTOS
+
+- **Super loop**: also referred to as **Foreground-Background architecture**. Classic way used in low complexity systems. An application consists of an infinite loop that calls one or more functions in succession to perform the desired operations _(background)._ **Interrupt service routines (ISRs)** are used to handle the asynchronous, real-time parts of the application _(foreground)._ In this architecture, the functions implementing the various functionalities are inherently, even if not formally declared as such, some sort of _finite state machines_, spinning around and switching states based on inputs provided by the ISRs.
+
+![Superloop overview](./assets/superloop_architecture.png)
+
+> This architecture requires only one stack and sometimes may result in simpler applications, especially when the entire functionality is performed on ISRs, and the background logic is reduced to an empty loop witing for interrupts. However, for slightly more complex applications, expressing the entire logic as a set of state machines can become a problem as the program grouws. The overall reaction speed may also be a problem, since the delay between the moment when the ISR makes available the input and the moment when the background routine can use it is not deterministic, depending on many other actions that can happen at the same time in the superloop. To ensure that urgent actions are performed in a timely manner, they must be moved on the ISRs, lengthening them and causing the reaction speed of the application to worsen.
+
+- **Advantages & Disadvantages on the Super Loop architecture:*
+  1. Advantages: ease of development; simple and efficient; great for smaller MCUs; doesn't require additional resources for processing.
+  2. Disadvantages: doesn't ensure time constraints; a function or interruption influences in the task execution time; hard to maintain and to expand to new functionalities.
+
+- **Important resources that an Operating System brings:** offer a **hardware abstraction layer (HAL)**; memory & processes management; intermediate communication between peripherals and processes; code portability.
+
+- **Real-time Operating Systems (RTOS):** an RTOS is an operating system in which the internal processes guarantee conformity with real-time requirements. The fundamental characteristics of an RTOS include: **predictability** (task scheduling behaviors are predictable), and **deterministic** (the same results are produced consistently under the same conditions).
