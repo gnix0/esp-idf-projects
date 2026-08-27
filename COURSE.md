@@ -426,14 +426,9 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
 
 ## FreeRTOS
 
-#### Introduction
+#### Super Loops
 
-- Common design patterns used in embedded systems development:
-  1. Super loops
-  2. State machines
-  3. Kernel - RTOS
-
-- **Super loop**: also referred to as **Foreground-Background architecture**. Classic way used in low complexity systems. An application consists of an infinite loop that calls one or more functions in succession to perform the desired operations _(background)._ **Interrupt service routines (ISRs)** are used to handle the asynchronous, real-time parts of the application _(foreground)._ In this architecture, the functions implementing the various functionalities are inherently, even if not formally declared as such, some sort of _finite state machines_, spinning around and switching states based on inputs provided by the ISRs.
+- Also referred to as **Foreground-Background architecture**. Classic way used in low complexity systems. An application consists of an infinite loop that calls one or more functions in succession to perform the desired operations _(background)._ **Interrupt service routines (ISRs)** are used to handle the asynchronous, real-time parts of the application _(foreground)._ In this architecture, the functions implementing the various functionalities are inherently, even if not formally declared as such, some sort of _finite state machines_, spinning around and switching states based on inputs provided by the ISRs.
 
 ![Superloop overview](./assets/superloop_architecture.png)
 
@@ -445,4 +440,26 @@ gpio_set_direction(gpio_num_t gpio_num, gpio_mode_t mode); // configures gpio mo
 
 - **Important resources that an Operating System brings:** offer a **hardware abstraction layer (HAL)**; memory & processes management; intermediate communication between peripherals and processes; code portability.
 
-- **Real-time Operating Systems (RTOS):** an RTOS is an operating system in which the internal processes guarantee conformity with real-time requirements. The fundamental characteristics of an RTOS include: **predictability** (task scheduling behaviors are predictable), and **deterministic** (the same results are produced consistently under the same conditions).
+#### RTOS Fundamentals
+
+- A **Real-Time Operating System (RTOS)** is a type of operating system designed to be small and deterministic. RTOSes are commonly used in embedded systems such as medical devices and automotive ECUs that need to react to external events withing strict time contraints. Typically this class of embedded system only has one or two requirements demanding such level of deterministic timing, and using an RTOS has benefits even when the embedded system has no hard real-time requirement at all.
+
+- The _kernel_ is the core component withing an OS. General purpose operating systems, such as Linux, employ kernels that allow multiple users to access the computer's processor seemingly simultaneously. These multiple users can each execute multiple programs apparently concurrently. Each execution program is implemented by one or more _threads_ under control of the operating system. If an OS can execute multiple threads in this manner it is said to be _multitasking_. Small RTOSes, like FreeRTOS, normally call threads **tasks** because they don't support virtual memory, so there is no distinction between processes and threads. The use of a multitasking OS can simplify the design of what would otherwise be a complex software applications: the multitasking and inter-task communication features of the OS allow the complex application to be partitioned into a set of smaller and more manageable tasks, the partitioning can result in easier software testing by dividing work within teams and through code reuse, and complex timing and sequencing details become responsibility of the RTOS kernel hence removing the burden from the application code.
+
+- Multitasking vs Concurrency: most OSes appear to allow multiple programs to execute at the same time (multitasking). In reality, each processor core can only be running a single thread of execution at any given point in time.
+
+![Task execution](./assets/task_execution.png)
+
+- Scheduling: the **scheduler** is the part of the kernel responsible for deciding which task should be executing at any particular time. The kernel can pause and later resume a task many times during the task's lifetime. The _scheduling policy_ is the algorithm used by the scheduler to decide which task to execute at any point in time. The policy of a (non real-time) multi-user system will most likely allow each task a "fair" proportion of processor time.
+
+> A task will only be swapped out if the scheduling algorithm decides to execute a different task. This can happen without the currently executing task being aware of it, such as when the scheduling algorithm responds to an external event or timer expiration. It can also happen if the executing task explicitly calls an API function that results in it yielding, sleeping (also called delaying), or blocking. If a task yields, the scheduling algorithm could select the same task to execute again. If a task sleeps, it becomes unavailable for selection until the specified delay period elapses. Similarly, if a task blocks, it becomes unavailable for selection until either a specific event occurs (e.g., data arrives on a UART) or a timeout period expires.
+
+> The operating system kernel is responsible for managing these task states and transitions, ensuring that the appropriate task is selected for execution at any given time according to the scheduling algorithm and the current state of each task
+
+![Scheduling](./assets/suspending.png)
+
+- Real-Time Scheduling: Real-time operating systems (RTOSes) achieve multitasking using these same principles, but their objectives differ greatly to those of general purpose (non real-time) systems. Real-time embedded systems are designed to provide a timely response to real world events. Events occurring in the real world can have deadlines before which the real-time embedded system must respond and the RTOS scheduling policy must ensure these deadlines are met.
+
+> To achieve this objective using a small RTOS, such as FreeRTOS, the developer must assign a priority to each task. The scheduling policy of the RTOS is then to simply ensure that the highest priority task that is able to execute is the task given processing time. This may optionally include sharing processing time "fairly" between tasks of equal priority if there is more than one task at the same highest priority that are able to run (i.e., are not delayed, and are not blocked).
+
+![RTOS Task Scheduling](./assets/rtos_task_scheduling.png)
