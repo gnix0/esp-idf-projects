@@ -21,7 +21,7 @@ void vTaskCounter(void *pvParameters);
 
 void app_main(void)
 {
-    ESP_LOGI(TAG1, "initializing application");
+    ESP_LOGI(TAG1, "running task app main");
 
     xTaskCreate(vTaskCounter, "TASK_COUNTER", 2048, NULL,
                 2, &xTaskCounterHandle);
@@ -33,7 +33,7 @@ void vTaskBlink(void *pvParameters)
 {
     bool status = false;
 
-    ESP_LOGI(TAG2, "initializing task Blink");
+    ESP_LOGI(TAG2, "running task Blink");
     gpio_reset_pin(LED_PIN);
     gpio_set_direction(LED_PIN, GPIO_MODE_OUTPUT);
 
@@ -47,17 +47,18 @@ void vTaskBlink(void *pvParameters)
 void vTaskCounter(void *pvParameters)
 {
     uint16_t counter = 0;
-    ESP_LOGI(TAG3, "initializing task Counter");
+    ESP_LOGI(TAG3, "running task Counter");
 
     for (;;) {
         ESP_LOGI(TAG3, "Counter = %d", counter);
 
         if (counter == 10) {
-            vTaskDelete(xTaskBlinkHandle);
+            vTaskSuspend(xTaskBlinkHandle);
             gpio_set_level(LED_PIN, 0);
+            ESP_LOGI(TAG3, "task Blink suspended");
         } else if (counter == 15) {
-            xTaskCreate(vTaskBlink, "TASK_BLINK", 2048, NULL,
-                        1, &xTaskBlinkHandle);
+            vTaskResume(xTaskBlinkHandle);
+            ESP_LOGI(TAG3, "task Blink running");
             vTaskDelete(NULL);  // deletes itself, same as passing vTaskCounterHandle instead
         }
 
