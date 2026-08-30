@@ -429,3 +429,19 @@ The simples best-effort scheduling algorithms are _round-robin_, _fair queueing_
 To achieve this objective using a small RTOS, such as FreeRTOS, the developer must assign a priority to each task. The scheduling policy of the RTOS is then to simply ensure that the highest priority task that is able to execute is the task given processing time. This may optionally include sharing processing time "fairly" between tasks of equal priority if there is more than one task at the same highest priority that are able to run (i.e., are not delayed, and are not blocked).
 
 ![RTOS Task Scheduling](./assets/rtos_task_scheduling.png)
+
+#### Tasks
+
+- The FreeRTOS scheduler will manage tasks according to the scheduling discipline.
+
+![Task](./assets/task.png)
+
+- A task that is in the _"Ready"_ state is able to be set to run, and it can also be _"Suspended"_.
+- A _"Running"_ task can either be _"Suspended"_, _"Blocked"_, or deleted.
+- A _"Blocked"_ task can be set by using resources provided by FreeRTOS, and can be set to either _"Suspended"_ or _"Ready"_.
+
+![Task States](./assets/task_states.png)
+
+- _Header file to be included:_ `task.h`
+
+- Tasks are referenced through the type `TaskHandle_t`. A call to `xTaskCreate` returns (via a pointer parameter) a `TaskHandle_t` variable that can be used, for example, as a parameter to `vTaskDelete` to delete the task.
