@@ -48,7 +48,7 @@ get_idf
 idf.py create-project <project_name> # generates a basic initial structure in the project_name directory
 
 idf.py set-target <target> # defines the target MCU for which the project will be compiled for
-	
+  
 idf.py menuconfig # opens an interactive config UI for adjusting compile options and others for the project
 
 idf.py clean # removes the files generated during the previous compilation, project ready for a new build
@@ -90,11 +90,11 @@ idf.py -C components create-component <my_component> # creates a new component i
 - ESP-IDF provides a set of macros for logging messages throughout the program's execution, through the header file `"esp_log.h"`.
 
 - 5 levels of logging are defined. Below they are listed, in order of increasing verbosity:
-	1. ESP_LOGE - Error
-	2. ESP_LOGW - Warning
-	3. ESP_LOGI - Info
-	4. ESP_LOGD - Debug
-	5. ESP_LOGV - Verbose
+  1. ESP_LOGE - Error
+  2. ESP_LOGW - Warning
+  3. ESP_LOGI - Info
+  4. ESP_LOGD - Debug
+  5. ESP_LOGV - Verbose
   
 > In each C file that needs logging functionalities, define the **TAG** variable as:
 
@@ -135,12 +135,12 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 - Allows direct, software-controlled, interaction with external devices. GPIO pins can be configured as input to read signals from sensors, buttons, or other peripherals, or as output to control components like LEDs, motors, and displays. Provides a more flexible and simple way to interface with hardware.
 
 - Each GPIO pin can be configured in one of the following modes:
-	1. Input Mode: the pin reads signals from external devices, such as sensors or push buttons. The voltage level (high or low) is interpreted as a binary signal (1 or 0).
-	2. Output Mode: the pin sends signals to control devices like LEDs, buzzers, or relays. The microcontroller sets the voltage level (high or low) to activate or deactivate the device.
+  1. Input Mode: the pin reads signals from external devices, such as sensors or push buttons. The voltage level (high or low) is interpreted as a binary signal (1 or 0).
+  2. Output Mode: the pin sends signals to control devices like LEDs, buzzers, or relays. The microcontroller sets the voltage level (high or low) to activate or deactivate the device.
 
 - To ensure a stable signal when a GPIO pin is set as an input but is not actively driven by an external circuit, pull-up and pull-down resistors are used:
-	1. Pull-up resistor: keeps the pin at a HIGH state when no signal is applied.
-	2. Pull-down resistor: keeps the pin at a LOW state when no signal is applied.
+  1. Pull-up resistor: keeps the pin at a HIGH state when no signal is applied.
+  2. Pull-down resistor: keeps the pin at a LOW state when no signal is applied.
 
 > Pull-up and pull-down resistors are used to correctly bias the inputs of digital gates.
 > These resistors prevent floating states when there is no input condition, which can cause unpredictable behavior in digital circuits. Therefore, if the microcontroller don't utilize them through the GPIO pins, and nothing is connected to the pins, the program will read a "floating" impedance state.
@@ -187,23 +187,23 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 ---
 
 - GPIO pins can generate interrupts, allowing microcontrollers to respond to external events in real time. Interrupts can be triggered on:
-	- Rising Edge: when the signal transitions from LOW to HIGH.
-	- Falling Edge: when the signal transitions from HIGH to LOW.
-	- Both Edges: when a signal changes in either direction.
+  - Rising Edge: when the signal transitions from LOW to HIGH.
+  - Falling Edge: when the signal transitions from HIGH to LOW.
+  - Both Edges: when a signal changes in either direction.
 
 > Interrupt-driven GPIO significantly improves system efficiency by reducing the need for continuous polling.
 
 - Many GPIO pins support **PWM (Pulse Width Modulation)**, which allows analog-like control over digital outputs. PWM is useful for:
-	- Controlling the brightness of LEDs.
-	- Adjusting the speed of motors.
-	- Generating sound signals in audio applications.
+  - Controlling the brightness of LEDs.
+  - Adjusting the speed of motors.
+  - Generating sound signals in audio applications.
 
 > PWM works by rapidly switching between HIGH and LOW states, adjusting the duty cycle to control the average output voltage.
 
 - Some GPIO pins serve multiple purposes and can be configured for specialized functions such as:
-	- **SPI (Serial Peripheral Interface)**
-	- **I2C (Inter-Integrated Circuit)**
-	- **UART (Universal Asynchronous Receiver-Transmitter)**
+  - **SPI (Serial Peripheral Interface)**
+  - **I2C (Inter-Integrated Circuit)**
+  - **UART (Universal Asynchronous Receiver-Transmitter)**
 
 > This feature allows microcontrollers to optimize the number of available pins while maintaining versatile functionality.
 
@@ -498,7 +498,60 @@ Even if all processes follow these rules, _multi-resource deadlock_ may still oc
 
 > If the implementation does not ensure atomicity of the increment, decrement, and comparison operations, there is a risk of increments or decrements being forgotten, or of the semaphore value becoming negative. Atomicity may be achieved by using a machine instruction that can read, modify, and then write the semaphore in a single operation. Without such a hardware instruction, an atomic operation may be synthesized by using a software mutual exclusion algorithm. On uniprocessor systems, atomic operations can be ensured by temporarily suspending preemption or disabling hardware interrupts. This approach does not work however on multiprocessor systems where it is possible for two programs sharing a semaphore to run on different processors at the same time, so a locking variable can be used to contorl access to the semaphore, which is manipulated using a _test-and-set-lock command._
 
-- A **mutex** (form _mutual exclusion_) is a _synchronization primitive_ that prevents state from being modified or accessed by multiple _threads of execution_ at once. Mutexes enforce **mutual exclusion concurrency control policies**, and with a variety of possible methods there exist multiple unique implementations for different applications.
+- A **lock or mutex** (from _mutual exclusion_) is a _synchronization primitive_ that prevents state from being modified or accessed by multiple _threads of execution_ at once. Mutexes enforce **mutual exclusion concurrency control policies**, and with a variety of possible methods there exist multiple unique implementations for different applications
+
+Generally, locks are _advisory locks_, where each thread cooperates by acquiring the lock before accessing the corresponding data. Some systems also implement _mandatory locks_, where attempting unauthorized access to a locked resource will force an exception in the entity attempting to make the access.
+
+A _binary semaphore_ is the simplest type of lock. It provides exclusive access to the locked data. Other schemes also provide shared access for reading data. Other widely implemented access modes are _exclusive_, _intend-to-exclude_ and _intend-to-upgrade._
+
+> Another way to classify locks is by what happens when the lock strategy prevents the progress of a thread. Most locking designs block the execution of the thread requesting the lock until it is allowed to access the locked resource. With a _spinlock_, the thread simply waits _("spins")_ until the lock becomes available. This is efficient if threads are blocked for a short time, since it avoids the overhead OS process rescheduling. I is inefficient if the lock is held for a long time, or if the progress of the thread that is holding the lock depends on preemption of the locked thread.
+
+Mutexes typically require hardware support for efficient implementation. This usually takes hte form of one or more _atomic_ instructions, such as _"test-and-set"_, _"fetch-and-add"_, or _"compare-and-swap"_. These instructions allow a single process to test if the lock is free, and if free, acquire the lock in a single atomic operation.
+
+_Uniprocessor architectures_ have the option of using uninterruptible sequences of instructions — using special instructions or instruction prefixes to disable interrupts temporarily — but this technique does not work for multiprocessor shared-memory machines. Proper support for locks in a multiprocessor environment can require quite complex hardware or software support, with substantial synchronization issues.
+
+The reason an atomic operation is required is because of concurrency, where more than one task executes the same logic. For example, consider the following C code:
+
+```c
+if (lock == 0) {
+  // If lock free, set it
+  lock = pid;
+}
+```
+
+> The above example does not guarantee that the task has the lock, since more than one task can be testing the lock at the same time. Since both tasks will detect that the lock is free, both tasks will attempt to set the lock, not knowing that the other task is also setting the lock.
+
+> Careless use of locks can result in **deadlock** or **livelock**. A number of strategies can be used to avoid or recover from deadlocks or livelocks, both at design-time and at run-time. (The most common strategy is to standardize the lock acquisition sequences so that combinations of inter-dependent locks are always acquired in a specifically defined "cascade" order.)
+
+---
+
+##### Aside: Granularity
+
+Before being introduced to lock granularity, one needs to understand three concepts about locks:
+
+  1. lock overhead: the extra resources for using locks, like the memory space allocated for locks, the CPU time to initialize and destroy locks, and the time for acquiring or releasing locks. The more locks a program uses, the more overhead associated with the usage.
+  2. lock contention: this occurs whenever one process or thread attempts to acquire a lock held by another process or thread. The more fine-grained the available locks, the less likely one process/thread will request a lock held by the other. (For example, locking a row rather than the entire table, or locking a cell rather than the entire row);
+  3. deadlock: the situation when each of at least two tasks is waiting for a lock that the other task holds. Unless something is done, the two tasks will wait forever.
+
+There is a tradeoff between decreasing lock overhead and decreasing lock contention when choosing the number of locks in synchronization.
+
+An important property of a lock is its granularity. The granularity is a measure of the amount of data the lock is protecting. In general, choosing a coarse granularity (a small number of locks, each protecting a large segment of data) results in less lock overhead when a single process is accessing the protected data, but worse performance when multiple processes are running concurrently. This is because of increased lock contention. The more coarse the lock, the higher the likelihood that the lock will stop an unrelated process from proceeding. Conversely, using a fine granularity (a larger number of locks, each protecting a fairly small amount of data) increases the overhead of the locks themselves but reduces lock contention. Granular locking where each process must hold multiple locks from a common set of locks can create subtle lock dependencies. This subtlety can increase the chance that a programmer will unknowingly introduce a deadlock.
+
+---
+
+**Disadvantages - Lock-based resource protection and thread/process synchronization have many disadvantages:**
+
+  1. Contention: some threads/processes have to wait until a lock (or a whole set of locks) is released. If one of the threads holding a lock dies, stalls, blocks, or enters an infinite loop, other threads waiting for the lock may wait indefinitely until the computer is power cycled.
+  2. Overhead: the use of locks adds overhead for each access to a resource, even when the chances for collision are very rare. (However, any chance for such collisions is a race condition.)
+  3. Debugging: bugs associated with locks are time dependent and can be very subtle and extremely hard to replicate, such as deadlocks.
+  4. Instability: the optimal balance between lock overhead and lock contention can be unique to the problem domain (application) and sensitive to design, implementation, and even low-level system architectural changes. These balances may change over the life cycle of an application and may entail tremendous changes to update (re-balance).
+  5. Composability: locks are only composable (e.g., managing multiple concurrent locks in order to atomically delete item X from table A and insert X into table B) with relatively elaborate (overhead) software support and perfect adherence by applications programming to rigorous conventions.
+  6. Priority inversion: a low-priority thread/process holding a common lock can prevent high-priority threads/processes from proceeding. Priority inheritance can be used to reduce priority-inversion duration. The priority ceiling protocol can be used on uniprocessor systems to minimize the worst-case priority-inversion duration, as well as prevent deadlock.
+  7. Convoying: all other threads have to wait if a thread holding a lock is descheduled due to a time-slice interrupt or page fault.
+
+Some concurrency control strategies avoid some or all of these problems. For example, a funnel or serializing tokens can avoid the biggest problem: deadlocks. Alternatives to locking include non-blocking synchronization methods, like lock-free programming techniques and transactional memory. However, such alternative methods often require that the actual lock mechanisms be implemented at a more fundamental level of the operating software. Therefore, they may only relieve the application level from the details of implementing locks, with the problems listed above still needing to be dealt with beneath the application.
+
+In most cases, proper locking depends on the CPU providing a method of atomic instruction stream synchronization (for example, the addition or deletion of an item into a pipeline requires that all contemporaneous operations needing to add or delete other items in the pipe be suspended during the manipulation of the memory content required to add or delete the specific item). Therefore, an application can often be more robust when it recognizes the burdens it places upon an operating system and is capable of graciously recognizing the reporting of impossible demands.
 
 ---
 
