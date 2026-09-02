@@ -21,7 +21,6 @@ CompileFlags:
     Remove: [-f*, -m*]
 ```
 
-
 ## Documentations
 
 1. [ESP-IDF](https://developer.espressif.com/tags/esp-idf/)
@@ -67,7 +66,7 @@ idf.py monitor # connects to the ESP serial port and shows the debugging logs in
 idf.py erase_flash # removes completely the flash memory of the ESP device, useful to clean all data
 ```
 
-2. Additional Useful Commands
+1. Additional Useful Commands
 
 ```bash
 idf.py size # shows the flash memory usage of the compiled application, including binary sizes and partitions sizes
@@ -85,7 +84,7 @@ idf.py gdbgui # initializes a GUI for debugging with GDB
 idf.py -C components create-component <my_component> # creates a new component inside an existing ESP-IDF project, creating the basic components/my_component structure
 ```
 
-3. Logging
+1. Logging
 
 - ESP-IDF provides a set of macros for logging messages throughout the program's execution, through the header file `"esp_log.h"`.
 
@@ -113,6 +112,7 @@ ESP_DRAM_LOGE(DRAM_STR("TAG_IN_DRAM"), "DRAM log message %d", i++);
 ```
 
 > Result:
+
 ```bash
 I (112500) MyModule: Baud rate error 1.5%. Requested: 115200 baud, actual: 116928 baud
 W (112500) MyModule: Early log message 1
@@ -120,15 +120,16 @@ E : TAG_IN_DRAM: DRAM log message 2
 ```
 
 - Enabling higher verbosity logging levels will automatically enable the lower levels. E.g.:
+
 ```c
 esp_log_level_set(TAG_ ESP_LOG_INFO); // Enables LOGI, but also LOGW and LOGE since they are below INFO in the verbosity levels
 ```
 
 - Disable all logs:
+
 ```c
 esp_log_level_set(TAG, ESP_LOG_NONE);
 ```
-
 
 ## General Purpose Input Output - GPIO in Microcontrollers
 
@@ -173,6 +174,7 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 > For **pull-down resistors**, it should always have a larger resistance than the impedance of the logic circuit. Or else, it will pull the voltage down by too much and the input voltage at the pin would remain at a constant logical low value regardless of whether the switch is on or off.
 
 |--------------------------------------------------------------------------|
+
 | Pull-down Resistors               | Pull-up Resistors                    |
 |-----------------------------------|--------------------------------------|
 | Less commonly used                | More commonly used                   |
@@ -216,9 +218,9 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
   4. **ADC/DAC:** conversion complete.
   5. **WiFi/Bluetooth Controllers:** network events, connection status changes.
 
-#### Interrupt Controller: a piece of hardware that manages interrupt requests from various peripherals. Its main tasks include: detecting interrupt requests from peripherals; prioritizing simultaneous interrupt requests; forwarding the highest-priority, enabled interrupt request to the CPU core; and providing the CPU with information to identify the source of the interrupt (e.g., an _interrupt vector address_).
+#### Interrupt Controller: a piece of hardware that manages interrupt requests from various peripherals. Its main tasks include: detecting interrupt requests from peripherals; prioritizing simultaneous interrupt requests; forwarding the highest-priority, enabled interrupt request to the CPU core; and providing the CPU with information to identify the source of the interrupt (e.g., an _interrupt vector address_)
 
-#### Interrupt Service Routines (ISRs): also known as an **interrupt handler** is the function executed by the CPU in direct response to an interrupt. ISRs have strict constraints due to their asynchronous nature and execution context:
+#### Interrupt Service Routines (ISRs): also known as an **interrupt handler** is the function executed by the CPU in direct response to an interrupt. ISRs have strict constraints due to their asynchronous nature and execution context
 
 1. **Execution Speed**: ISRs must execute **as quickly as possible**. While an ISR runs, other interrupts (of the same or lower priority) might be blocked, and normal task sheduling is paused. Long ISRs increase system latency and can lead to missed events.
 2. **Non-Blocking**: ISRs **must never block**. They cannot wait for semaphores, queues (with a timeout), or call functions like `vTaskDelay()`. Blocking in an ISR can easily lead to system deadlock.
@@ -227,7 +229,7 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 
 - The primary role of an ISR is usually to: intentify the exact cause of the interrupt (if multiple sources share one ISR); cleear the interrupt flag in the peripheral hardware to prevent immediate re-triggering; perform the absolute minimum, time-critical processing; and, optionally, signal a regular FreeRTOS task to perform longer processing (_Deferred Interrupt Processing_).
 
-#### Interrupt Priorities and Leves: interrupt controllers allow assigning priorities or levels to different interrupt sources. This determines the order in which simultaneous interrupts are serviced and whether one ISR can preempt another.
+#### Interrupt Priorities and Leves: interrupt controllers allow assigning priorities or levels to different interrupt sources. This determines the order in which simultaneous interrupts are serviced and whether one ISR can preempt another
 
 > Higher priority interrupts are serviced before lower priority ones.
 
@@ -235,13 +237,13 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 
 - Careful priority asisgnment is crucial for real-time performance, ensuring that the most critical events are handled with the lowest latency. ESP-IDF's `esp_intr_alloc` function allows specifying an interrupt level (1-3 are generally recommended for application use on Xtensa, avoiding levels used by the OS).
 
-#### Critical Sections: sometimes, an ISR needs to access data that is also accessed by regular tasks. If the ISR preempts a task _while_ the task is modifying that shared data, a **race condition** can occur, leading to data corruption.
+#### Critical Sections: sometimes, an ISR needs to access data that is also accessed by regular tasks. If the ISR preempts a task _while_ the task is modifying that shared data, a **race condition** can occur, leading to data corruption
 
 - To prevent this, we use **critical sections**. A critical session is a piece of code that must execute atomically, without being interrupted by other tasks or relevant ISRs. FreeRTOS provides macros for this:
   1. `portENTER_CRITICAL(&spinlock)` / `portENTER_CRITICAL_ISR(&spinlock)`: enters a critical section. Disables interrupts up to `configMAX_SYSCALL_INTERRUPT_PRIORITY`. Requires initializing a `portMUX_TYPE spinlock = portMUX_INITIALIZED_UNLOCKED`.
   2. `portEXIT_CRITICAL(&spinlock)` / `portEXIT_CRITICAL_ISR(&spinlock`: exits the critical section, re-enabling interrupts.
 
-#### Deferred Interrupt Processing: the strict constraints on ISR execution time and complexity often makes it impractical to perform all event handling within the ISR. The standard practice is **deferred interrupt processing**, where the ISR does the bare minimum (clear flag, maybe capture quick data) and then signals (defers work to) a regular FreeRTOS task to handle the bulk of the processing.
+#### Deferred Interrupt Processing: the strict constraints on ISR execution time and complexity often makes it impractical to perform all event handling within the ISR. The standard practice is **deferred interrupt processing**, where the ISR does the bare minimum (clear flag, maybe capture quick data) and then signals (defers work to) a regular FreeRTOS task to handle the bulk of the processing
 
 - Common techniques for singaling a task from an ISR:
   1. **Semaphores (`xSemaphoreGiveFromISR`):** the ISR "gives" a binary semaphore. A dedicated task wats (`xSemaphoreTake`) on that semaphore. Simple and effective for signaling an event occurence.
@@ -253,15 +255,11 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 
 #### Aside: bitmasks in C
 
-
-
 ---
-
 
 ## Components - Part I
 
 > IMPORTATNT: after creating a new component (or more), it is necessary to reconfigure the project using `idf.py reconfigure` for properly applying the new changes on the project's structure. Otherwise, the build will fail with errors.
-
 
 ## PWM - Pulse Width Modulation
 
@@ -289,7 +287,6 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
   3. Change the PWM signal that controls the output to adjust the LED's intensity. This can be done entirely under software control, or using hardware fading functions.
   4. (Optional) Set up an interrupt on fase end.
 
-
 ## ADC - Analog to Digital Converters
 
 - Switches, relays, and encoders are inherently digital themselves, and therefore interfacing them with gate circuits is straightforward due to the on/off nature of their signals. However, when analog devices are involved, interfacing becomes more complex.
@@ -297,7 +294,6 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 - To translate analog signals into digital (binary) quantities, an **analog-to-digital converter (ADC)** is used. An ADC inputs an analog _electrical signal_ as voltage or current and outputs a _binary number_. These ADC circuits can be found as _individual ADC ICs_ by themselves or embedded into a microcontroller.
 
 ![ADC Diagram](./assets/adc_diagram.png)
-
 
 - How does and ADC work?:
   1. **Reference voltage:** the voltage mapped to the maximum binary value is called the **reference voltage**. For example, in a 10-bit converter with 5V as the reference voltage, 1111111111 corresponds to 5V and 0000000000 corresponds to 0V. So each binary step up represents around 4.9mV, since there are 1024 possible digits in 10 bits. _This measure of 'volts per bit' is called the resolution of the ADC._ If the voltage changes are below the 4.9mV per step, however, the ADC will be put in a dead zone. The conversion result therefore always has a small error. This can be prevented by using an ADC with a higher resolution. ADCs up to 24 bits are available, though conversion frequencies are low (in the order of a few hertz).
@@ -309,7 +305,6 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
   3. **Successive Approximation ADCs:** among the most accurate types. They consist of a comparator, a simple flash DAC, and a memory register. The device initially assumes all the bits in the register except for the highest significant bit (which is a one) to be zeroes. The register then sends this to the DAC which converts it to an analog voltage, which is compared with the input through the comparator. If the input voltage is higher than the DAC voltage, then the MSB remains one. This process is repeated until all the bits have been set either to zero or one, i.e., the register value exactly equals the input voltage. This ADC is one of the most commonly used where accuracy is needed and speed is not much of a limitation, such as in microcontrollers. SA type ADCs can easily achieve conversion times of a few microseconds.
 
 - **Applications of ADCs include:** _digital osciloscopes and multimeters, microcontrollers, and digital power supplies._
-
 
 ## DAC - Digital to Analog Converters
 
@@ -357,7 +352,7 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 
 > This architecture requires only one stack and sometimes may result in simpler applications, especially when the entire functionality is performed on ISRs, and the background logic is reduced to an empty loop witing for interrupts. However, for slightly more complex applications, expressing the entire logic as a set of state machines can become a problem as the program grouws. The overall reaction speed may also be a problem, since the delay between the moment when the ISR makes available the input and the moment when the background routine can use it is not deterministic, depending on many other actions that can happen at the same time in the superloop. To ensure that urgent actions are performed in a timely manner, they must be moved on the ISRs, lengthening them and causing the reaction speed of the application to worsen.
 
-- **Advantages & Disadvantages on the Super Loop architecture:*
+- *_Advantages & Disadvantages on the Super Loop architecture:_
   1. Advantages: ease of development; simple and efficient; great for smaller MCUs; doesn't require additional resources for processing.
   2. Disadvantages: doesn't ensure time constraints; a function or interruption influences in the task execution time; hard to maintain and to expand to new functionalities.
 
@@ -473,9 +468,9 @@ Semaphores that allow an arbitrary resource count are called **counting semaphor
 When used to control access to a **pool** of resources, a semaphore track only _how many_ resources are free. I does not keep track of _which_ of the resources are free. Other mechanisms, possibly involving more semaphores, may be required to select a particular free resources.
 
 > A **pool** is a collection of resources that are kept in memory, ready to use, rather than the memory acquired on use or the memory released afterwards. In this context, _resources_ can refer to **system resources** such as _file handles_, which are external to a process, or internal resources such as _objects_. A _pool client_ requests a resource from the pool and performs desired operations on the returned resource. When the client finishes its use of the resource, it is returned to the pool rather than released and lost.
-
+>
 > The pooling of resources can offer a significant response-time boost in situations that have high cost associated with resource acquiring, high rate of the requests for resources, and a low overall count of simultaneously used resources. Pooling is also useful when the _latency_ is a concern, because a pool offers predictable times required to obtain resources since they have already been acquired. These benefits are mostly true for system resources that require a _system call_, or remote resources that require a network communication, like database connections, socket connections, threads, and memory allocation. Pooling is also useful for expensive-to-compute data, notably large graphic objects like fonts or bitmaps, acting essentially as a data cache or a memoization technique.
-
+>
 > Special cases of pools are: **connection pools**, **thread pools**, and **memory pools**.
 
 The paradigm is especially powerful because the semaphore count may serve as a useful trigger for a number of different actions.
@@ -520,7 +515,7 @@ if (lock == 0) {
 ```
 
 > The above example does not guarantee that the task has the lock, since more than one task can be testing the lock at the same time. Since both tasks will detect that the lock is free, both tasks will attempt to set the lock, not knowing that the other task is also setting the lock.
-
+>
 > Careless use of locks can result in **deadlock** or **livelock**. A number of strategies can be used to avoid or recover from deadlocks or livelocks, both at design-time and at run-time. (The most common strategy is to standardize the lock acquisition sequences so that combinations of inter-dependent locks are always acquired in a specifically defined "cascade" order.)
 
 ---
