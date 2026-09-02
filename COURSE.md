@@ -457,3 +457,23 @@ To achieve this objective using a small RTOS, such as FreeRTOS, the developer mu
 - Has a finite number of elements, defined on the creation of the Queue. The elements' sizes are also fixed and defined on creation.
 
 - Pass values by copy or reference.
+
+#### Task Synchronization: Semaphores, Mutexes & Notifications
+
+> **IMPORTANT:** a _race condition_ occurs when multiple threads access shared data concurrently, and the final result depends on the timing of their execution.
+
+- A **semaphore** is a _synchronization device_ used to control access to a a common resource by multiple threads or processes in a concurrent system, such as a multitasking operating system. It allows simultaneous access to a critical section by some predetermined number of processes.
+
+Semaphores that allow an arbitrary resource count are called **counting semaphores**, while semaphores that are restricted to the values 0 and 1 _(or locked/unlocked, unavailable/available)_ are called **binary semaphores** and are used to implement a **mutex**. A **mutex**, is a synchronization primitive that prevents state from being mofified or accessed by multiple threads of execution at once. Mutexes enforce mutual exclusion concurrecy control policies, and with a variety of possible methods there exist multiple unique implementations for different applications.
+
+- _Counting semaphores_ are equipped with two operations: Operation **V** increments the semaphore **S**, and operation **P** decrements it. The value of the semaphore S represents the number of units of available resource units when non-negative. In some implementations, negative values indicate the number of processes waiting for the resource. The P operation **wastes time or sleeps** until a resource protected by the semaphore becomes available, at which time the resource is immediately claimed. The V operations is the inverse, making a resource available again after the process has finished using it. One important property of semaphore S is that its value cannot be changed except by using the V and P operations.
+
+`wait (P)` - decrements the value of the semaphore variable by 1. If the new value of the semaphore variable is negative, the process executing wait is blocked (i.e., added to the _semaphore's queue_). Otherwise, the process continues execution, having used a unit of the resource.
+
+`signal (V)` - increments the value of the semaphore variable by 1. After the increment, if the pre-increment value was negative (meaning there are processes waiting for a resource), it transfers a blocked process from the semaphore's waiting queue to the ready queue.
+
+> The _counting semaphore_ concept can be extended with the ability to claim or return more than one "unit" from the semaphore. This is sometimes called a **weighted semaphore**. These semaphores are useful for limiting access to, for example, memory or disk space. A process that needs N megabytes of space to run needs to decrease the semaphore by N units. However, doing this in N separate calls to P _can cause deadlocks_.
+
+- To avoid **starvation** _(where a process is perpetually denied necessary resources to process its work)_, a semaphore has an associated **queue of processes**. If a process performs a P operation on a semaphore that has the value zero, the process is added to the semaphore's queue and its execution is suspended. When another process increments the semaphore by performing a V operation, and there are processes on the queue, one of them is removed from the queue and resumes execution. When processes have different priorities the queue may be ordered thereby, such that the highest priority process is taken from the queue first.
+
+> If the implementation does not ensure atomicity of the increment, decrement, and comparison operations, there is a risk of increments or decrements being forgotten, or of the semaphore value becoming negative. Atomicity may be achieved by using a machine instruction that can read, modify, and then write the semaphore in a single operation. Without such a hardware instruction, an atomic operation may be synthesized by using a software mutual exclusion algorithm. On uniprocessor systems, atomic operations can be ensured by temporarily suspending preemption or disabling hardware interrupts. This approach does not work however on multiprocessor systems where it is possible for two programs sharing a semaphore to run on different processors at the same time, so a locking variable can be used to contorl access to the semaphore, which is manipulated using a _test-and-set-lock command._
