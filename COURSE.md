@@ -445,3 +445,15 @@ To achieve this objective using a small RTOS, such as FreeRTOS, the developer mu
 - _Header file to be included:_ `task.h`
 
 - Tasks are referenced through the type `TaskHandle_t`. A call to `xTaskCreate` returns (via a pointer parameter) a `TaskHandle_t` variable that can be used, for example, as a parameter to `vTaskDelete` to delete the task.
+
+#### Queues in RTOS
+
+- FIFO
+
+- Used for message exchanging between tasks or between an interrupt and a task.
+
+- Doesn't belong to any task, and may be accessed by multiple tasks and interrupts.
+
+- Has a finite number of elements, defined on the creation of the Queue. The elements' sizes are also fixed and defined on creation.
+
+- Pass values by copy or reference.
