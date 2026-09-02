@@ -464,7 +464,27 @@ To achieve this objective using a small RTOS, such as FreeRTOS, the developer mu
 
 - A **semaphore** is a _synchronization device_ used to control access to a a common resource by multiple threads or processes in a concurrent system, such as a multitasking operating system. It allows simultaneous access to a critical section by some predetermined number of processes.
 
-Semaphores that allow an arbitrary resource count are called **counting semaphores**, while semaphores that are restricted to the values 0 and 1 _(or locked/unlocked, unavailable/available)_ are called **binary semaphores** and are used to implement a **mutex**. A **mutex**, is a synchronization primitive that prevents state from being mofified or accessed by multiple threads of execution at once. Mutexes enforce mutual exclusion concurrecy control policies, and with a variety of possible methods there exist multiple unique implementations for different applications.
+Semaphores that allow an arbitrary resource count are called **counting semaphores**, while semaphores that are restricted to the values 0 and 1 _(or locked/unlocked, unavailable/available)_ are called **binary semaphores** and are used to implement a **mutex**.
+
+---
+
+##### Aside: important observations
+
+When used to control access to a **pool** of resources, a semaphore track only _how many_ resources are free. I does not keep track of _which_ of the resources are free. Other mechanisms, possibly involving more semaphores, may be required to select a particular free resources.
+
+> A **pool** is a collection of resources that are kept in memory, ready to use, rather than the memory acquired on use or the memory released afterwards. In this context, _resources_ can refer to **system resources** such as _file handles_, which are external to a process, or internal resources such as _objects_. A _pool client_ requests a resource from the pool and performs desired operations on the returned resource. When the client finishes its use of the resource, it is returned to the pool rather than released and lost.
+
+> The pooling of resources can offer a significant response-time boost in situations that have high cost associated with resource acquiring, high rate of the requests for resources, and a low overall count of simultaneously used resources. Pooling is also useful when the _latency_ is a concern, because a pool offers predictable times required to obtain resources since they have already been acquired. These benefits are mostly true for system resources that require a _system call_, or remote resources that require a network communication, like database connections, socket connections, threads, and memory allocation. Pooling is also useful for expensive-to-compute data, notably large graphic objects like fonts or bitmaps, acting essentially as a data cache or a memoization technique.
+
+> Special cases of pools are: **connection pools**, **thread pools**, and **memory pools**.
+
+The paradigm is especially powerful because the semaphore count may serve as a useful trigger for a number of different actions.
+
+The success of the protocol requires applications to follow it correctly. Fairness and safety are likely to be compromised, which practically means a program may behave slowly, act erratically, **hang** _()_, or **crash** _()_ if even a single process acts incorrectly. This includes: requesting a resource and forgetting to release it, releasing a resource that was never requested, holding a resource for a long time without needing it, using a resource without requesting it first (of after releasing it).
+
+Even if all processes follow these rules, _multi-resource deadlock_ may still occur when there are different resources managed by different semaphores and when processes need to use more than one resource at a time.
+
+---
 
 - _Counting semaphores_ are equipped with two operations: Operation **V** increments the semaphore **S**, and operation **P** decrements it. The value of the semaphore S represents the number of units of available resource units when non-negative. In some implementations, negative values indicate the number of processes waiting for the resource. The P operation **wastes time or sleeps** until a resource protected by the semaphore becomes available, at which time the resource is immediately claimed. The V operations is the inverse, making a resource available again after the process has finished using it. One important property of semaphore S is that its value cannot be changed except by using the V and P operations.
 
@@ -477,3 +497,4 @@ Semaphores that allow an arbitrary resource count are called **counting semaphor
 - To avoid **starvation** _(where a process is perpetually denied necessary resources to process its work)_, a semaphore has an associated **queue of processes**. If a process performs a P operation on a semaphore that has the value zero, the process is added to the semaphore's queue and its execution is suspended. When another process increments the semaphore by performing a V operation, and there are processes on the queue, one of them is removed from the queue and resumes execution. When processes have different priorities the queue may be ordered thereby, such that the highest priority process is taken from the queue first.
 
 > If the implementation does not ensure atomicity of the increment, decrement, and comparison operations, there is a risk of increments or decrements being forgotten, or of the semaphore value becoming negative. Atomicity may be achieved by using a machine instruction that can read, modify, and then write the semaphore in a single operation. Without such a hardware instruction, an atomic operation may be synthesized by using a software mutual exclusion algorithm. On uniprocessor systems, atomic operations can be ensured by temporarily suspending preemption or disabling hardware interrupts. This approach does not work however on multiprocessor systems where it is possible for two programs sharing a semaphore to run on different processors at the same time, so a locking variable can be used to contorl access to the semaphore, which is manipulated using a _test-and-set-lock command._
+
