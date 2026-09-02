@@ -460,8 +460,6 @@ To achieve this objective using a small RTOS, such as FreeRTOS, the developer mu
 
 #### Task Synchronization: Semaphores, Mutexes & Notifications
 
-> **IMPORTANT:** a _race condition_ occurs when multiple threads access shared data concurrently, and the final result depends on the timing of their execution.
-
 - A **semaphore** is a _synchronization device_ used to control access to a a common resource by multiple threads or processes in a concurrent system, such as a multitasking operating system. It allows simultaneous access to a critical section by some predetermined number of processes.
 
 Semaphores that allow an arbitrary resource count are called **counting semaphores**, while semaphores that are restricted to the values 0 and 1 _(or locked/unlocked, unavailable/available)_ are called **binary semaphores** and are used to implement a **mutex**.
@@ -469,6 +467,8 @@ Semaphores that allow an arbitrary resource count are called **counting semaphor
 ---
 
 ##### Aside: important observations
+
+> **IMPORTANT:** a _race condition_ occurs when multiple threads access shared data concurrently, and the final result depends on the timing of their execution.
 
 When used to control access to a **pool** of resources, a semaphore track only _how many_ resources are free. I does not keep track of _which_ of the resources are free. Other mechanisms, possibly involving more semaphores, may be required to select a particular free resources.
 
@@ -498,3 +498,19 @@ Even if all processes follow these rules, _multi-resource deadlock_ may still oc
 
 > If the implementation does not ensure atomicity of the increment, decrement, and comparison operations, there is a risk of increments or decrements being forgotten, or of the semaphore value becoming negative. Atomicity may be achieved by using a machine instruction that can read, modify, and then write the semaphore in a single operation. Without such a hardware instruction, an atomic operation may be synthesized by using a software mutual exclusion algorithm. On uniprocessor systems, atomic operations can be ensured by temporarily suspending preemption or disabling hardware interrupts. This approach does not work however on multiprocessor systems where it is possible for two programs sharing a semaphore to run on different processors at the same time, so a locking variable can be used to contorl access to the semaphore, which is manipulated using a _test-and-set-lock command._
 
+- A **mutex** (form _mutual exclusion_) is a _synchronization primitive_ that prevents state from being modified or accessed by multiple _threads of execution_ at once. Mutexes enforce **mutual exclusion concurrency control policies**, and with a variety of possible methods there exist multiple unique implementations for different applications.
+
+---
+
+##### Aside: Semaphores vs mutexes
+
+- A _mutex_ is a _locking mechanism_ that sometimes use the same basic implementation as the binary semaphore. However, they differ in how they are used. while a binary semaphore may be colloquially referred to as a mutex, a true mutex has a more specific use-case and definition, in that only the _task_ that locked the mutex is supposed to unlock it.
+
+- This constraints aims to handle some potential problems of using semaphores, such as:
+  1. **Priority inversion:** if the mutex knows who locked it and is supposed to unlock it, it is possible to promote the priority of that task whenever a higher-priority task starts waiting on the mutex.
+  2. **Premature task terminations:** mutexes may also provide deletion safety, where the task holding the mutex cannot be accidentally deleted. (This is also a cost; if the mutex can prevent a task from being reclaimed, then a garbage collector has to monitor the mutex.)
+  3. **Termination deadlock:** if a mutex-holding task terminates for any reason, the OS can release the mutex and signal waiting tasks of this condition.
+  4. **Recursion deadlock:** a task is allowed to lock a _reentrant mutex_ multiple tmes as it unlocks it an equal nubmer of times.
+  5. **Accidental release:** an error is raised on the release of the mutex if the releasing task is not its owner.
+
+---
