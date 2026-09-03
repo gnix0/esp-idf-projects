@@ -64,7 +64,9 @@ void led_task(void *pvParameters)
         if (xSemaphoreTake(xBinarySemaphore, portMAX_DELAY) == pdTRUE) {
             ESP_ERROR_CHECK(gpio_set_level(LED1_PIN, led_status^=1));
             ESP_LOGI(TAG, "ISR Received on BUTTON[%d]. Inverting LED[%d] state to: %d",
-                                                    BUTTON1_PIN, LED1_PIN, led_status);
+                    BUTTON1_PIN,
+                    LED1_PIN,
+                    led_status);
         }
     }
 }
