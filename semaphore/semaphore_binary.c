@@ -35,15 +35,15 @@ void app_main(void)
 
     io_conf.pin_bit_mask    = (1ULL<<LED1_PIN);
     io_conf.mode            = GPIO_MODE_OUTPUT;
-    io_conf.pull_up_en      = 0;
-    io_conf.pull_down_en    = 0;
+    io_conf.pull_up_en      = DISABLED;
+    io_conf.pull_down_en    = DISABLED;
     io_conf.intr_type       = GPIO_INTR_DISABLE;
     ESP_ERROR_CHECK(gpio_config(&io_conf));
 
     io_conf.pin_bit_mask    = (1ULL<<BUTTON1_PIN);
     io_conf.mode            = GPIO_MODE_INPUT;
-    io_conf.pull_up_en      = 1;
-    io_conf.pull_down_en    = 0;
+    io_conf.pull_up_en      = ENABLED;
+    io_conf.pull_down_en    = DISABLED;
     io_conf.intr_type       = GPIO_INTR_NEGEDGE;
     ESP_ERROR_CHECK(gpio_config(&io_conf));
 
