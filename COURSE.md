@@ -176,15 +176,14 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 |--------------------------------------------------------------------------|
 
 | Pull-down Resistors               | Pull-up Resistors                    |
-|-----------------------------------|--------------------------------------|
 | Less commonly used                | More commonly used                   |
+
 |-----------------------------------|--------------------------------------|
 | Keeps the input _"Low"_           | Keeps the input _"High"_             |
-|-----------------------------------|--------------------------------------|
+
 | Connect between an I/O pin and    | Connect between I/O pin and          |
 | GND, with an open switch          | +supply voltage, with an open        |
 | connected between I/O and +supply | switch connected between I/O and GND |
-|--------------------------------------------------------------------------|
 
 ---
 
@@ -576,3 +575,110 @@ In most cases, proper locking depends on the CPU providing a method of atomic in
 > Example use of counting semaphore: a task is blocked waiting for a semaphore. An interrupt occurs that **gives** the semaphore, which unblocks the task (the semaphore is now available) that now successfully **takes** the semaphore, so it is unavailable once more. The task now starts to process the event. Another two interrupts occur while the task is still processing the first event. Both ISRs give the semaphore, effectively latching both events, so _neither event is lost_. When the task has finished processing the first event it calls `xSemaphoreTake()` again. Another two semaphores are already available, one is taken without the task ever entering the blocked state, leaving one latched semaphore still available.
 
 > Example use of a mutex: a resource is being guarded by a mutex. Two tasks want to access the resource, but a task is not permitted to access the resource unless it is the mutex (token) holder. Task A attempts to take the mutex. Because the mutex is available, Task A successfully becomes the mutex holder so is permitted to access the resource. Task B then executes and attempts to take the same mutex. Task A still has the mutex so the attempt fails and Task B is not permitted to access the guarded resource. Task B opts to enter the blocked state to wait for the mutex, allowing Task A to run again. Task A finishes with the resource so gives the mutex back. Task A giving the mutex back causes Task B to exit the blocked state (the mutex is now available). Task B can now successfully obtain the mutex, and having done so is permitted to access the resource. When Task B finishes accessing the resource it too gives the mutex back, which is now once again available to both tasks.
+
+---
+
+### In-Depth Section
+
+#### Memory
+
+> General memory types and concepts (for reference):
+>
+> **MMU (Memory Management Unit):** Hardware that translates _virtual addresses -> physical addresses_ and enforces memory-access permissions.
+> **Cache:** Small, fast memory that keeps recently/frequently used _data or instructions_ so the CPU doesn't have to fetch them from slower memory.
+> **TLB (Translation Lookaside Buffer):** A small, fast cache that stores recently used _virtual -> physical address translations_, allowing the MMU to perform address translation without repeatedly consulting the page tables. It is used by the _address-translation machinery._ A **TLB miss** means the translation isn't currently cached, so the system needs to obtain it from the page tables (or otherwise perform the required address-translation operation). A **cache miss** means the requested instruction/data isn't currently in the relevant CPU cache, so it has to be fetched from a lower/slower level of the memory hierarchy.
+> **DMA (Direct Memory Access):** Hardware that allows a peripheral or other hardware component to _transfer data directly to or from memory without requiring the CPU to manually move each individual piece of data._ The CPU configures the DMA transfer, and the DMA controller performs the transfer independently, usually generating an interrupt when the operation completes.
+> **IRAM (Instruction RAM):** RAM used to store _machine instructions/code_ so the CPU can execute them quickly.
+> **IROM (Instruction ROM):** Memory/address space used for _program instructions that aren't meant to be modified._ Depending on the architecture, this can be actual ROM or memory-mapped non-volatile storage such as flash.
+> **RTC FAST (Real-Time Clock Fast Memory):** A _small, fast memory associated with the RTC (Real-Time Clock) subsystem_, typically intended for data/code that needs to remain available during low-power operation.
+> **RTC SLOW (Real-Time Clock Slow Memory):** A _small, lower-power memory associated with the RTC subsystem_, optimized for retention and very-low-power operation rather than speed.
+> **SRAM (Static RAM):** RAM that stores bits using _flip-flop circuits_; very fast and doesn't need refresh, but loses its context when power is removed.
+> **DRAM (Dynamic RAM):** RAM that stores bits as _electrical charge in capacitors_; requires periodic refresh, giving it higher density than SRAM but generally more complex/slower.
+> **Flash memory (Flash non-volatile memory):** A type of _non-volatile storage_, meaning it retains data when power is removed. Used to store things like _firmware, programs, configuration, and persistent data._
+>
+> _IRAM/IROM_ describe what the memory is being used for (instructions).
+> _SRAM/DRAM_describe the underlying type of RAM.
+> _RTC FAST/SLOW_ describe memory belonging to an RTC/low-power domain, with different performance/power characteristics.
+>
+> _SRAM/DRAM:_ volatile working memory (RAM).
+> _Flash:_ non-volatile storage.
+> _ROM:_ non-volatile read-only memory.
+>
+> Flash is technically a type of _EEPROM (Electrically Erasable Programmable Read-Only Memory), but it is organized for _block/sector erasure_ rather than typically erasing individual bytes.
+
+ESP-IDF distinguishes between **instruction memory bus** _(IRAM, IROM, RTC FAST memory)_ and **data memory bus** _(DRAM, DROM)._ Instruction memory is executable and can only be read or written via 4-byte aligned words. Data memory is not executable and can be accessed via individual byte operations.
+
+**1. DRAM - Data RAM:** Non-constant static data _(.data)_ and zero-initialized data _(.bss)_ is placed by the linker into Internal SRAM as data memory. The remaining space in this region is used for the _runtime heap._ Constant data may also be placed into DRAM, for example if it is used in a non-flash-safe ISR.
+
+**2. IRAM - Instruction RAM:** Interrupt handlers must be placed into IRAM if `ESP_INTR_FLAG_IRAM` is used when registering the interrupt handler. Some timing critical code may be placed into IRAM to reduce the penalty associated with loading the code from flash. ESP32-C6 reads code and data from flash via the _MMU cache._ In some cases, placing a function into IRAM may reduce delay caused by a cache miss and significantly improve that function's performance.
+
+- Specify IRAM placement in the source code using the `IRAM_ATTR` macro:
+
+```c
+#include "esp_attr.h"
+
+void IRAM_ATTR gpio_isr_handler(void *arg)
+{
+  // ...
+}
+```
+
+There are some possible issutes with placement in IRAM, that may cause problems with IRAM-safe interrupt handlers, namely:
+
+- Strings or constants inside an `IRAM_ATTR` function may not be placed in RAM automatically. It is possible to use `DRAM_ATTR` attributes to mark these.
+
+```c
+void IRAM_ATTR gpio_isr_handler(void *arg)
+{
+  const static DRAM_ATTR uint8_t INDEX_DATA = { 45, 33, 12, 0 };
+  const static char *MSG = DRAM_STR("This string is stored in RAM");
+}
+```
+
+- GCC optimizations that automatically generate jump tables or switch/case lookup tables place these tables in flash. IDF by default build all files with `-fno-jump-tables -fno-tree-switch-conversion` flags to avoid this.
+
+**3. IROM - Code executed from flash:** If a function is not explicitly placed into IRAM or RTC memory, it is placed into flash. As IRAM is limited, most of an application's binary code must be placed into IROM instead. During the _Application Startup Flow_, the bootloader (which runs from IRAM) configures the MMU flash cache to map the app's instruction code region to the instruction space. Flash accessed via the MMU is cached using some internal SRAM and accessing cached flash data is as fast as accessing other types of internal memory.
+
+**4. DROM - Data stored in flash:** By default, constant data is placed by the linker into a region mapped to the MMU flash cache. This is the same as the IROM section, but is for read-only data, not executable code. The only constant data not placed into this memory type by default are literal constants which are embedded by the compiler into application code. These are placed as the surrounding function's executable instructions. The `DRAM_ATTR` attribute can be used to force constants from DROM into DRAM section.
+
+**5. RTC FAST Memory:** The same region of RTC FAST memory can be accessed as both instruction and data memory. Code which has to run after wake-up deep sleep mode has to be placed into RTC memory. Remaining RTC FAST memory is added to the heap unless the option `CONFIG_ESP_SYSTEM_ALLOW_RTC_FAST_MEM_AS_HEAP` is disabled. This memory can be used interchangeably with DRAM, but is slightly slower to access.
+
+**6. DMA - Capable Requirement:** Most peripheral DMA controllers (e.g., SPI, admmc, etc.) have requirements that sending/receiving buffers should be placed in DRAM and word-aligned. The suggestion is to place DMA buffers in static variables rather than in the stack. Use macro `DMA_ATTR` to declare global/local static variables.
+
+1st example:
+
+```c
+DMA_ATTR uint8_t buffer[] = "Something to be sent";
+
+void app_main()
+{
+  // initialization code...
+
+  spi_transaction_t temp = {
+    .tx_buffer  = buffer,
+    .length     = 8 * sizeof(buffer),
+  };
+  spi_device_transmit(spi, &temp);
+
+  // other code...
+}
+```
+
+2nd example:
+
+```c
+void app_main()
+{
+  DMA_ATTR static uint8_t buffer = "Something to be sent";
+
+  //initialization code...
+
+  spi_transaction_t temp = {
+    .tx_buffer  = buffer,
+    .length     = 8 * sizeof(buffer),
+  };
+  spi_device_transmit(spi, &temp);
+
+  // other code...
+}
+```
