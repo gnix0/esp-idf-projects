@@ -562,3 +562,17 @@ In most cases, proper locking depends on the CPU providing a method of atomic in
   5. **Accidental release:** an error is raised on the release of the mutex if the releasing task is not its owner.
 
 ---
+
+- FreeRTOS features: **binary semaphores** (only assumes 0 or 1) and **counting semaphores** (assumes 0 through a max value), and **mutexes** for locking/unlocking operations.
+
+![Binary Semaphore Example](./assets/binary_semaphore.png)
+
+- Example use cases: task synchronization, task and interrupt synchronization, and resource restriction.
+
+> Example use for using interrupts: a task is pending while waiting for a binary semaphore. An interrupt can then release the semaphore, allowing the pending task to execute.
+
+![Binary Semaphore use with interrupt](./assets/binary_semaphore_interrupt.png)
+
+> Example use of counting semaphore: a task is blocked waiting for a semaphore. An interrupt occurs that **gives** the semaphore, which unblocks the task (the semaphore is now available) that now successfully **takes** the semaphore, so it is unavailable once more. The task now starts to process the event. Another two interrupts occur while the task is still processing the first event. Both ISRs give the semaphore, effectively latching both events, so _neither event is lost_. When the task has finished processing the first event it calls `xSemaphoreTake()` again. Another two semaphores are already available, one is taken without the task ever entering the blocked state, leaving one latched semaphore still available.
+
+> Example use of a mutex: a resource is being guarded by a mutex. Two tasks want to access the resource, but a task is not permitted to access the resource unless it is the mutex (token) holder. Task A attempts to take the mutex. Because the mutex is available, Task A successfully becomes the mutex holder so is permitted to access the resource. Task B then executes and attempts to take the same mutex. Task A still has the mutex so the attempt fails and Task B is not permitted to access the guarded resource. Task B opts to enter the blocked state to wait for the mutex, allowing Task A to run again. Task A finishes with the resource so gives the mutex back. Task A giving the mutex back causes Task B to exit the blocked state (the mutex is now available). Task B can now successfully obtain the mutex, and having done so is permitted to access the resource. When Task B finishes accessing the resource it too gives the mutex back, which is now once again available to both tasks.
