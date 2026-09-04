@@ -19,8 +19,9 @@
 static const char TIMER1_TAG[] = "Timer 1 Callback";
 static const char TIMER2_TAG[] = "Timer 2 Callback";
 
-TaskHandle_t            xTask1Handle;
-TimerHandle_t xTimer1Handle, xTimer2Handle;
+TaskHandle_t xTask1Handle   = NULL;
+TimerHandle_t xTimer1Handle = NULL:
+TimerHandle_t xTimer2Handle = NULL;
 
 void task1(void *pvParameters);
 
