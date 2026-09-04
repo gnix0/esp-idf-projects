@@ -651,6 +651,12 @@ int main(void)
 }
 ```
 
+**Task Notifications:** each task in the RTOS have a 32-bit notification variable. A _Task Notification_ is an event sent directly to the task, being able to then unlock it. Unlocking an RTOS task with a direct notification is around 45% faster and consumes less memory than doing the same thing using a binary semaphore. These task notifications can hence be used to, for instance: binary semaphores, counting semaphores, and _event groups._
+
+To use this resource, `configUSE_TASK_NOTIFICATIONS` has to be defined to _1_ in `FreeRTOSConfig.h`.
+
+Limitations include: they are unable to send a notification to an ISR, unable to send notifications to multiple tasks at the same time, and as a consequence, to send another notification one must wait for the last notification's handling.
+
 ---
 
 Software timers are an optional resource on FreeRTOS. To enable the functionality, one must:
