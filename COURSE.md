@@ -881,3 +881,36 @@ _I2C Clock Configurations:_
 - `i2c_clock_source_t::I2C_CLK_SRC_RC_FAST`: Internal 20 MHz RC oscillator for I2C source clock.
 
 Public headers that need to be included in the I2C application: `i2c.h`, `i2c_master.h`, and `i2c_slave.h`.
+
+**Resource Allocation:** The I2C master bus is represented by `i2c_master_bus_handle_t` in the driver. The available ports are managed in a resource pool that allocates a free port on a request. The I2C master bus is designed to be based on bus-device model. So `i2c_master_bus_config_t` and `i2c_device_config_t` are required separately to allocate the I2C master bus instance and I2C device instance.
+
+![I2C Master Bus-Device](./assets/i2c_master_bus_device.png)
+
+If the configurations in `i2c_master_bus_config_t` are specified, then `i2c_new_master_bus()` can be called to allocate and initialize an I2C master bus. This function will return an I2C bus handle if it runs correctly. Specifically, when there are no more I2C port available, this function will return `ESP_ERR_NOT_FOUND` error.
+
+Once the `i2c_device_config_t` structure is populated with mandatory parameters, `i2c_master_bus_add_device()` can be called to allocate an I2C device instance and mounted to the master bus then. This function returns an I2C device handle if it runs correctly, or, if the I2C but is no initialized properly, results in a `ESP_ERR_INVALID_ARG` error.
+
+```c
+#include "driver/i2c_master.h"
+
+i2c_master_bus_config_t i2c_master_cfg = {
+    .clk_source                     = I2C_CLK_SRC_DEFAULT,
+    .i2c_port                       = TEST_I2C_PORT,
+    .scl_io_num                     = I2C_MASTER_SCL_IO,
+    .sda_io_num                     = I2C_MASTER_SDA_IO,
+    .glitch_ignore_cnt              = 7,
+    .flags.enable_internal_pullup   = true,
+};
+
+i2c_master_bus_handle_t bus_handle = NULL;
+ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_master_cfg, &bus_handle));
+
+i2c_device_config_t dev_cfg = {
+    .dev_addr_length  = I2C_ADDR_BIT_LEN_7,
+    .device_address   = 0x58,
+    .scl_speed_hz     = 100000,
+};
+
+i2c_master_dev_handle_t dev_handle = NULL:
+ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
+```
