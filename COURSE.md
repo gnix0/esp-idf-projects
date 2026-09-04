@@ -343,7 +343,7 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 
 ## FreeRTOS
 
-#### Super Loops
+### Super Loops
 
 - Also referred to as **Foreground-Background architecture**. Classic way used in low complexity systems. An application consists of an infinite loop that calls one or more functions in succession to perform the desired operations _(background)._ **Interrupt service routines (ISRs)** are used to handle the asynchronous, real-time parts of the application _(foreground)._ In this architecture, the functions implementing the various functionalities are inherently, even if not formally declared as such, some sort of _finite state machines_, spinning around and switching states based on inputs provided by the ISRs.
 
@@ -357,7 +357,7 @@ esp_log_level_set(TAG, ESP_LOG_NONE);
 
 - **Important resources that an Operating System brings:** offer a **hardware abstraction layer (HAL)**; memory & processes management; intermediate communication between peripherals and processes; code portability.
 
-#### RTOS Fundamentals
+### RTOS Fundamentals
 
 - A **Real-Time Operating System (RTOS)** is a type of operating system designed to be small and deterministic. RTOSes are commonly used in embedded systems such as medical devices and automotive ECUs that need to react to external events withing strict time contraints. Typically this class of embedded system only has one or two requirements demanding such level of deterministic timing, and using an RTOS has benefits even when the embedded system has no hard real-time requirement at all.
 
@@ -440,7 +440,7 @@ To achieve this objective using a small RTOS, such as FreeRTOS, the developer mu
 
 - Tasks are referenced through the type `TaskHandle_t`. A call to `xTaskCreate` returns (via a pointer parameter) a `TaskHandle_t` variable that can be used, for example, as a parameter to `vTaskDelete` to delete the task.
 
-#### Queues in RTOS
+### Queues in RTOS
 
 - FIFO
 
@@ -452,7 +452,7 @@ To achieve this objective using a small RTOS, such as FreeRTOS, the developer mu
 
 - Pass values by copy or reference.
 
-#### Task Synchronization: Semaphores, Mutexes & Notifications
+### Task Synchronization: Semaphores, Mutexes & Notifications
 
 - A **semaphore** is a _synchronization device_ used to control access to a a common resource by multiple threads or processes in a concurrent system, such as a multitasking operating system. It allows simultaneous access to a critical section by some predetermined number of processes.
 
