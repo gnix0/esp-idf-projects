@@ -460,7 +460,7 @@ Semaphores that allow an arbitrary resource count are called **counting semaphor
 
 ---
 
-##### Aside: important observations
+#### Aside: important observations
 
 > **IMPORTANT:** a _race condition_ occurs when multiple threads access shared data concurrently, and the final result depends on the timing of their execution.
 
@@ -519,7 +519,7 @@ if (lock == 0) {
 
 ---
 
-##### Aside: Granularity
+#### Aside: Granularity
 
 Before being introduced to lock granularity, one needs to understand three concepts about locks:
 
@@ -549,7 +549,7 @@ In most cases, proper locking depends on the CPU providing a method of atomic in
 
 ---
 
-##### Aside: Semaphores vs mutexes
+#### Aside: Semaphores vs mutexes
 
 - A _mutex_ is a _locking mechanism_ that sometimes use the same basic implementation as the binary semaphore. However, they differ in how they are used. while a binary semaphore may be colloquially referred to as a mutex, a true mutex has a more specific use-case and definition, in that only the _task_ that locked the mutex is supposed to unlock it.
 
