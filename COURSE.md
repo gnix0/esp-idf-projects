@@ -861,3 +861,23 @@ HAL functions generally have the following characteristics:
 - HAL functions should not contain any OS primitives such as queues, semaphores, mutexes, etc. All synchronization/concurrency should be handled at higher layers (e.g., the driver).
 - Some peripherals may have steps that cannot be further abstracted by the HAL, thus end up being a direct wrapper (or macro) for an LL function.
 - Some HAL functions may be placed in IRAM thus may carry an `IRAM_ATTR` or be placed in a separate `xxx_hal_iram.c` source file.
+
+#### Inter-Integrated Circuit (I2C)
+
+I2C is a serial, synchronous, multi-device, half-duplex communication protocol that allows co-existence of multiple masters and slaves on the same bus. I2C uses two bidirectional open-drain lines: **serial data line (SDA) and serial clock line (SCL)**, _pulled up_ by resistors.
+
+> ESP32-C6 has 1 I2C controller (or port), responsible for handling communication on the I2C bus. This controller can be either a master or a slave. The ESP32-C6 chip also has 1 low-power (LP) I2C controller.
+
+Typically, an I2C slave device has a _7-bit or 10-bit address_. ESP32-C6 supports both I2C Standard-mode (Sm) and Fast-mode (Fm), which can go up to 100 kHz and 400 kHz respectively.
+
+> Note: The frequency of SCL is influenced both by the pull-up resistor and the wire capacitance.. It is recommended to choose appropriate pull-up resistors to make the frequency accurate. The recommended valu for pull-up resistors usually ranges from 1 kΩ to 10 kΩ. The higher the frequency, the smaller the pull-up resistor should be (but not less than 1 kΩ). Large resistor will decline the current, which will increase the clock switching time and reduce the frequency. A range of 2 kΩ to 5 kΩ is recommended, although adjustments may also be necessary depending on their current draw requirements.
+>
+> Important: enable `CONFIG_I2C_ENABLE_SLAVE_DRIVER_VERSION_2` for developing applications with the better slave driver.
+
+_I2C Clock Configurations:_
+
+- `i2c_clock_source_t::I2C_CLK_SRC_DEFAULT`: Default I2C source clock.
+- `i2c_clock_source_t::I2C_CLK_SRC_XTAL`: External crystal for I2C source clock.
+- `i2c_clock_source_t::I2C_CLK_SRC_RC_FAST`: Internal 20 MHz RC oscillator for I2C source clock.
+
+Public headers that need to be included in the I2C application: `i2c.h`, `i2c_master.h`, and `i2c_slave.h`.
