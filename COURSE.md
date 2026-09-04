@@ -576,7 +576,96 @@ In most cases, proper locking depends on the CPU providing a method of atomic in
 
 > Example use of a mutex: a resource is being guarded by a mutex. Two tasks want to access the resource, but a task is not permitted to access the resource unless it is the mutex (token) holder. Task A attempts to take the mutex. Because the mutex is available, Task A successfully becomes the mutex holder so is permitted to access the resource. Task B then executes and attempts to take the same mutex. Task A still has the mutex so the attempt fails and Task B is not permitted to access the guarded resource. Task B opts to enter the blocked state to wait for the mutex, allowing Task A to run again. Task A finishes with the resource so gives the mutex back. Task A giving the mutex back causes Task B to exit the blocked state (the mutex is now available). Task B can now successfully obtain the mutex, and having done so is permitted to access the resource. When Task B finishes accessing the resource it too gives the mutex back, which is now once again available to both tasks.
 
+- **Software Timers:** used for scheduling the execution of a function, in a certain point of time in future or periodically with a fixed frequency. The executed function is called the **callback function** of the software timer. Software timers don't need hardware support, and are not related to hardware timers or counters.
+
 ---
+
+#### Aside: Callback functions
+
+A callback is a function that is passed as an argument to another function, allowing that function to call back (execute) the passed function at a later time. The key components of C callbacks are: the callback function, a callback registration, and a callback execution.
+
+Anatomy of a C callback function:
+
+```c
+#include <stdio.h>
+
+// Callback Function which has no argument and no return value
+void callback_fn(void)
+{
+  printf("In callback function\n");
+}
+
+void test_loop(void (*fn)(void))
+{
+  for (int i = 0; i < 6, i++) {
+    if (i == 5) {
+      // Callback execution
+      (*fn) ();
+    }
+
+    printf("i = %d\n", i);
+  }
+}
+
+int main(void)
+{
+  // Registering the callback
+  void (*fn_ptr)(void) = &callback_fn;
+
+  // Calling the function with the function pointer
+  test_loop(fn_ptr);
+
+  return 0;
+}
+```
+
+C callback function with arguments, using `typedef`:
+
+```c
+#include <stdio.h>
+
+typedef void (*callback_)(int val);
+
+void callback_fn(int val)
+{
+  printf("In callback function, val = %d\n", val);
+}
+
+void test_loop(callback_fn)
+{
+  for (int i = 0; i < 6; i++) {
+    if (i == 5)
+      fn(i);
+    
+    printf("i = %d\n", i);
+  }
+}
+
+int main(void)
+{
+  callback_ fn_ptr = &callback_fn;
+
+  test_loop(fn_ptr);
+
+  return 0;
+}
+```
+
+---
+
+Software timers are an optional resource on FreeRTOS. To enable the functionality, one must:
+
+1. Include `timers.c`
+
+2. Configure the timer in `FreeRTOSConfig.h` by: enabling it in `configUSE_TIMERS` -> configuring the timer priority in `configTIMER_TASK_PRIORITY` -> configuring the queue size in `configTIMER_QUEUE_LENGTH` -> and then configuring the timer's stack size in `configTIMER_TASK_STACK_DEPTH`.
+
+Software timers don't use any CPU processing while active, although they don't use hardware ticks and don't execute the timer callback functions in an interrupt context. They can be compared to a FreeRTOS task. All timer commands are sent to the task _"Timer Service or Daemon Task"_ by a queue.
+
+Latency will vary according to the Timer Service task priority and the FreeRTOS frequency, both configurable. It can lose commands if executed excessively during a short time span, since the communication with the Timer Service task is done through a queue, which can get full. They are limited to 1kHz.
+
+> Example types of software timers include: One-shot and Auto Reload.
+
+The RTOS Daemon (Task Service) Task is initialized automatically with the scheduler if the functionality is enabled. It is responsible for receiving and executing the commands over timers and also executing the callback function - and it works pretty much the same as a RTOS task.
 
 ### In-Depth Sections
 
