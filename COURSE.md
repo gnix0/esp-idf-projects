@@ -657,6 +657,14 @@ To use this resource, `configUSE_TASK_NOTIFICATIONS` has to be defined to _1_ in
 
 Limitations include: they are unable to send a notification to an ISR, unable to send notifications to multiple tasks at the same time, and as a consequence, to send another notification one must wait for the last notification's handling.
 
+**Event Groups:** allow event communication to tasks. Different than queues and semaphores, an event group allows a task to wait in a locked state until the occurrence of an event (or a combination of events), and can unlock all tasks that were pending while waiting for such.
+
+Event groups are useful for synchronization of multiple tasks. They are used to ensure that a cartain behavior triggers only after a pre-defined set of one or more events. Hence, they can reduce the use of memory resources, since it is possible in many times to replace multiple binary semaphores for a single event group. To use the functionality, it is needed to include `event_groups.c`, as they are an optional feature on FreeRTOS.
+
+The number of bits in an event group depends on the configuration of `configUSE_16_BIT_TICKS` in `FreeRTOSConfig.h`. If the flag is _1_ each event group will contain 8 usable bits for events. If set to _0_ each event group will contain 24 usable bits for events.
+
+> The standard usage in the FreeRTOS port for the ESP32 is setting `configUSE_16_BIT_TICS = 0`.
+
 ---
 
 Software timers are an optional resource on FreeRTOS. To enable the functionality, one must:
