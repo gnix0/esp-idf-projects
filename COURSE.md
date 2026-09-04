@@ -1113,7 +1113,7 @@ Some I2C device needs write configurations before reading data from it. Therefor
 
 ![I2C master write to slave and read from slave](./assets/i2c_master_write_and_read.png)
 
-> Note: no STOP condition bit is inserted between the write and read operations, therefore, this function is suited to read a register from an I2C device.
+> Note: no STOP condition bit is inserted between the write and read operations, therefore this function is suited to read a register from an I2C device.
 
 Simple example for writing and reading from a slave device:
 
@@ -1131,3 +1131,124 @@ uint8_t buf[20] = {0x20};
 uint8_t buffer[2];
 ESP_ERROR_CHECK(i2c_master_transmit_receive(dev_handle, buf, sizeof(buf), buffer, 2, -1));
 ```
+
+#### I2C Master Probe
+
+I2C driver can use `i2c_master_probe()` to detect whether the specific device has been connected on I2C bus. If this function return `ESP_OK`, that means the device has been detected.
+
+> Pull-ups must be connected to the SCL and SDA pins when this function is called. If you get `ESP_ERR_TIMEOUT` while `xfer_timeout_ms` was parsed correctly, check the pull-up resistors. If no proper resistors are available for use, setting `flags.enable_internal_pullup` as true is also acceptable.
+
+![I2C master probe](./assets/i2c_master_probe.png)
+
+Simple example for probing and I2C device:
+
+```c
+i2c_master_bus_config_t i2c_master_cfg_1 = {
+    .clk_source                   = I2C_CLK_SRC_DEFAULT,
+    .i2c_port                     = TEST_I2C_PORT,
+    .scl_io_num                   = I2C_MASTER_SCL_IO,
+    .sda_io_num                   = I2C_MASTER_SDA_IO,
+    .glitch_ignore_cnt            = 7,
+    .flags.enable_internal_pullup = true,
+};
+
+i2c_master_bus_handle_t bus_handle;
+
+ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_master_cfg_1, &bus_handle));
+ESP_ERROR_CHECK(i2c_master_probe(bus_handle, 0x22, -1));
+ESP_ERROR_CHECK(i2c_del_master_burs(bus_handle));
+```
+
+#### I2C Slave Controller
+
+After installing the I2C slave driver by `i2c_new_slave_device()`, ESP32-C6 is ready to communicate with other I2C masters as a slave.
+
+The I2C slave is not as subjective as the I2C master which knows when it should send data and wehn it should receive data. The I2C slave is very passive in most cases, that means the I2C slave's ability to send and receive data is largely dependent on the master's action. Therefore, we throw two callback functions in the driver that represent read requests adn write requests from the I2C master.
+
+#### I2C Slave Write
+
+You can get I2C slave write event be register `i2c_slave_event_callback_t::on_request` callback, and in a task when get the request event, you can call `i2c_slave_write` to send data.
+
+Simple example for transmitting data:
+
+```c
+// Prepare a callback function
+static bool i2c_slave_request_cb(i2c_slave_dev_handle_t i2c_slave, const i2c_slave_request_event_data_t *evt_data, void *arg)
+{
+    i2c_slave_event_t evt = I2C_SLAVE_EVT_TX;
+    BaseType_t xTaskWoken = 0;
+    xQueueSendFromISR(context->event_queue, &evt, &xTaskWoken);
+    return xTaskWoken;
+}
+
+// Register callback in a task
+i2c_slave_event_callbacks_t cbs = {
+    .on_request = i2c_slave_request_cb,
+};
+ESP_ERROR_CHECK(i2c_slave_register_event_callbacks(context.handle, &cbs, &context));
+
+// Waiting for request event and send data in a task
+static void i2c_slave_task(void *arg)
+{
+    uint8_t buffer_size = 64;
+    uint32_t write_len;
+    uint8_t *data_buffer;
+
+    while (true) {
+        i2c_slave_event_t evt;
+        if (xQueueReceive(context->event_queue, &evt, 10) == pdTRUE) {
+            ESP_ERROR_CHECK(i2c_slave_write(handle, data_buffer, buffer_size, &write_len, 1000));
+        }
+    }
+    vTaskDelete(NULL);
+}
+```
+
+#### I2C Slave Read
+
+Same as write, you can get I2C slave read event be register `i2c_slave_event_callbaks::on_receive` callback, and in a task when get the request event, you can save the data and do what's needed.
+
+Simple example for receiving data:
+
+```c
+// Prepare a callback function
+static bool i2c_slave_receive_cb(i2c_slave_dev_handle_t i2c_slave, const i2c_slave_rx_done_event_data_t *evt_data, void *arg)
+{
+  i2c_slave_event_t evt = I2C_SLAVE_EVT_RX;
+  BaseType_t xTaskWoken = 0;
+  // You can get data and length via i2c_slave_rx_done_event_data_t
+  xQueueSendFromISR(context->event_queue, &evt, &xTaskWoken);
+  return xTaskWoken;
+}
+
+// Register callback in a task
+i2c_slave_event_callbacks_t cbs = {
+    .on_receive = i2c_slave_receive_cb,
+};
+ESP_ERROR_CHECK(i2c_slave_register_event_callbacks(context.handle, &cbs, &context));
+```
+
+#### Register Event Callbacks
+
+**1. I2C master callbacks:** When an I2C master bus triggers an interrupt, a specific event willl be generated and notify the CPU. If you have some functions that need to be called when those events occurred, you can hook your functions to the ISR _(Interrupt Service Routine)_ by calling `i2c_master_register_event_callbacks()`. Since the registered callback functions are called in the interrupt context, users should ensure the callback function doesn't attempt to block (e.g., by making sure that only FreeRTOS APIs with `ISR` suffix are called from the function). The callback functions are required to return a boolean value, to tell the ISR whether a high priority task is woken up by it. I2C master event callbacks are listed in the `i2c_master_event_callbacks_t`. Although I2C is synchronous communication protocol, asynchronous behavior is supported by registering the aforementioned callbacks. In this way, I2C APIs will be non-blocking interfaces. Note that on the same bus, only one device can adopt asynchronous operation.
+
+> `i2c_master_event_callbacks_t::on_recv_done` sets a callback function for master "transaction-done" event. The function prototype is declared in `i2c_master_callback_t`.
+
+**2. I2C slave callbakcs:** When an I2C slave bus triggers an interrupt, a specific event will be generated and notify the CPU. If you have some function that needs to be called when those events occurred, you can hook your function to the ISR by calling `i2c_slave_register_event_callback()`. Since the registered callback functions are called in the interrupt context, users should ensure the callback function doesn't attempt to block (e.g., by making sure that only FreeRTOS APIs with `ISR` suffix are called from the function). The callback function has a boolean return value, to tell the caller whether a high priority task is woken up by it. I2C slave event callbacks are listed in the `i2c_slave_event_callbacks_t`.
+
+> `i2c_slave_event_callbacks::on_request` sets a callback function for request event.
+> `i2c_slave_event_callbacks::on_receive` sets a callback function for receive event.
+
+#### IRAM Safe
+
+By default, I2C interrupt will be deferred when the cache is disabled for reasons such as writing or erasing flash memory. Thus the event callback functions will not get executed in time, which is not expected in a real-time application.
+
+There's a Kconfig option **CONFIG_I2C_ISR_IRAM_SAFE** that will: enable the interrupt being serviced even when cache is disabled, place all functions that used by the ISR into IRAM, and place driver object into DRAM (in case it's mapped to PSRAM by accident).
+
+This will allow the interrupt to run while the cache is disable but will come at the cost of increased IRAM consumption.
+
+#### Thread Safety
+
+The factory function `i2c_new_master_bus()` and `i2c_new_slave_device()` are guaranteed to be thread safe by the driver, which means that the functions can be called from different RTOS tasks without protection by extra locks. I2C master operation functions are also guaranteed to be thread safe by bus operation semaphore, and so are I2C slave operation functions.
+
+> Other functions are not guaranteed to be thread-safe, thus you should avoid calling them in different tasks without mutex protection.
