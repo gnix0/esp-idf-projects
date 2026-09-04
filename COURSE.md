@@ -882,7 +882,11 @@ _I2C Clock Configurations:_
 
 Public headers that need to be included in the I2C application: `i2c.h`, `i2c_master.h`, and `i2c_slave.h`.
 
-**Resource Allocation:** The I2C master bus is represented by `i2c_master_bus_handle_t` in the driver. The available ports are managed in a resource pool that allocates a free port on a request. The I2C master bus is designed to be based on bus-device model. So `i2c_master_bus_config_t` and `i2c_device_config_t` are required separately to allocate the I2C master bus instance and I2C device instance.
+1. Resource Allocation
+
+#### Install I2C master bus and device
+
+The I2C master bus is represented by `i2c_master_bus_handle_t` in the driver. The available ports are managed in a resource pool that allocates a free port on a request. The I2C master bus is designed to be based on bus-device model. So `i2c_master_bus_config_t` and `i2c_device_config_t` are required separately to allocate the I2C master bus instance and I2C device instance.
 
 ![I2C Master Bus-Device](./assets/i2c_master_bus_device.png)
 
@@ -913,4 +917,217 @@ i2c_device_config_t dev_cfg = {
 
 i2c_master_dev_handle_t dev_handle = NULL:
 ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle);
+```
+
+#### Get I2C master handle via port
+
+When the I2C master handle has been initialized in one module (e.g., an audio module), but it is not convenient to acquire this handle in another module (e.g., a video module). You can use the helper function `i2c_master_get_bus_handle()` to retrieve the initialized handle via port. Ensure that the handle has already been initialized beforehand to avoid potential errors.
+
+```c
+// Sourde file 1
+#include "driver/i2c_master.h"
+i2c_master_bus_handle_t bus_handle;
+i2c_master_bus_config_t i2c_master_cfg = {
+  ... // Usual config routine
+}
+ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_master_cfg, &bus_handle));
+
+// Source file 2
+#include "driver/i2c_master.h"
+i2c_master_bus_handle_t handle;
+ESP_ERROR_CHECK(i2c_master_get_bus_handle(0, &handle));
+```
+
+#### Instal I2C master bus with LP I2C Peripheral
+
+Main differences that should be taken on consideration, since installing the I2C master bus with LP I2C peripheral is almost the same as how HP I2C peripheral is installed, include things like: I/Os, clock sources, I2C port number, and others. The following code will show how to install I2C master bus with LP_I2C.
+
+```c
+#include "driver/i2c_master"
+
+i2c_master_bus_config_t i2c_master_cfg = {
+    .clk_source                   = LP_I2C_SCLK_DEFAULT,  // Clock source for LP I2C, might be different from HP I2C
+    .i2c_port                     = LP_I2C_NUM_0,         // Assign to LP I2C port
+    .scl_io_num                   = 7,                    // SCL I/O number. Refer to technical reference manual
+    .sda_io_num                   = 6,                    // SDA I/O number. Refer to technical reference manual
+    .glitch_ignore_cnt            = 7,
+    .flags.enable_internal_pullup = true,
+};
+
+i2c_master_bus_handle_t bus_handle;
+ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_master_cfg, &bus_handle));
+
+i2c_device_config_t dev_cfg = {
+    .dev_addr_length  = I2C_ADDR_BIT_LEN_7,
+    .device_address   = 0x58,
+    .scl_speed_hz     = 100000,
+};
+
+i2c_master_dev_handle_t dev_handle;
+ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
+```
+
+#### Uninstall I2C master bus and device
+
+If a previously installed I2C bus or device is no longer needed, it's recommended to recycle the resouce by calling `i2c_master_bus_rm_device()` or `i2c_del_master_bus()`, so as to release the underlying hardware.
+
+#### Install I2C slave device
+
+Once the `i2c_slave_config_t` structure is populated with mandatory parameters, `i2c_new_slave_device()` can be called to allocate and initialize and I2C master bus. This function will return an I2C bus handle if it runs correctly. Specifically, when there are no more I2C port available, this function will return `ESP_ERR_NOT_FOUND` error.
+
+```c
+i2c_slave_config_t i2c_slave_cfg = {
+    .i2c_port           = I2C_SLAVE_NUM,
+    .clk_source         = I2C_CLK_SRC_DEFAULT,
+    .scl_io_num         = I2C_SLAVE_SCL_IO,
+    .sda_io_num         = I2C_SLAVE_SDA_IO,
+    .slave_addr         = ESP_SLAVE_ADDR,
+    .send_buf_depth     = 100,
+    .receive_buf_depth  = 100,
+};
+
+i2c_slave_dev_handle_t slave_handle;
+ESP_ERROR_CHECK(i2c_new_slave_device(&i2c_slave_cfg, &slave_handle));
+```
+
+#### Uninstall I2C slave device
+
+If a previously install I2C bus is no longer needed, it's recommended to recycle the resource by calling `i2c_del_slave_device()`, so as to release the underlying hardware.
+
+#### I2C Master Controller
+
+After installing the I2C master driver by `i2c_new_master_bus()`, ESP32-C6 is ready to communicate with other I2C devices. I2C APIs allow the standard transactions. For example, the wave as follows:
+
+![Wave DROM](./assets/wavedrom.png)
+
+#### I2C Master Write
+
+After installing I2C master bus successfully, you can simply call `i2c_master_transmit()` to write data to the slave device. The principle of thie function is explained in the chart below. In order to organize the process, the driver uses a command link, that should be populated with a sequence commands and then passed to I2C controller for execution.
+
+![I2C master write to slave](./assets/i2c_master_write.png)
+
+Simple example for writing data to slave:
+
+```c
+#define DATA_LENGTH 100
+
+i2c_master_bus_config_t i2c_master_cfg = {
+    .clk_source         = I2C_CLK_SRC_DEFAULT,
+    .i2c_port           = I2C_PORT_NUM_0,
+    .scl_io_num         = I2C_MASTER_SCL_IO,
+    .sda_io_num         = I2C_MASTER_SDA_IO,
+    .glitch_ignore_cnt  = 7,
+};
+
+i2c_master_bus_handle_t bus_handle;
+ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_master_cfg, &bus_handle));
+
+i2c_device_config_t dev_cfg = {
+    .dev_addr_length  = I2C_ADDR_BIT_LEN_7,
+    .device_addres    = 0x58,
+    .scl_speed_hz     = 100000,
+};
+
+i2c_master_dev_handle_t dev_handle;
+ESP_ERROR_CHECK(i2c_master_but_add_device(bus_handle, &dev_cfg, &dev_handle));
+
+ESP_ERROR_CHECK(i2c_master_transmit(dev_handle, data_wr, DATA_LENGTH, -1));
+```
+
+I2C master write also supports transmit multi-buffer in one transaction. Simple example:
+
+```c
+uint8_t control_phase_byte  = 0;
+size_t control_phase_size   = 0;
+
+if (/*condition*/) {
+    control_phase_byte  = 1;
+    control_phase_size  = 1;
+}
+
+uint8_t *cmd_buffer     = NULL;
+size_t cmd_buffer_size  = 0
+
+if (/*condition*/) {
+    uint8_t cmds[4] = {BYTESHIFT(lcd_cmd, 3), BYTESHIFT(lcd_cmd, 2), BYTESHIFT(lcd_cmd, 1), BYTESHIFT(lcd_cmd, 0)};
+
+    cmd_buffer      = cmds;
+    cmd_buffer_size = 4;
+}
+
+uint8_t *lcd_buffer     = NULL;
+size_t lcd_buffer_size  = 0;
+
+if (/*condition*/) {
+    lcd_buffer      = (uint8_t *)buffer;
+    lcd_buffer_size = buffer_size;
+}
+
+i2c_master_transmit_multi_buffer_info_t lcd_i2c_buffer[3] = {
+    {.write_buffer = &control_phase_byte, .buffer_size = control_phase_size},
+    {.write_buffer = cmd_buffer, .buffer_size = cmd_buffer_size},
+    {.write_buffer = lcd_buffer, .buffer_size = lcd_buffer_size},
+};
+
+i2c_master_multi_buffer_transmit(handle, lcd_i2c_buffer,
+                                sizeof(lcd_i2c_buffer) / sizeof(i2c_master_transmit_multi_buffer_info_t), -1);
+```
+
+#### I2C Master Read
+
+After installing I2C master bus successfully, you can simply call `i2c_master_receive()` to read data from the slave device. The principle of this function is explained in the chart below.
+
+![I2C master read from slave](./assets/i2c_master_read.png)
+
+Simple example for reading data from slave:
+
+```c
+#define DATA_LENGTH 100
+
+i2c_master_bus_config_t i2c_master_cfg = {
+    .clk_source         = I2C_CLK_SRC_DEFAULT,
+    .i2c_source         = I2C_PORT_NUM_0,
+    .scl_io_num         = I2C_MASTER_SCL_IO,
+    .sda_io_num         = I2C_MASTER_SDA_IO,
+    .glitch_ignore_cnt  = 7,
+};
+
+i2c_master_bus_handle_t bus_handle;
+ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_master_cfg, &bus_handle));
+
+i2c_device_config_t dev_cfg = {
+    .dev_addr_length  = I2C_ADDR_BIT_LEN_7,
+    .device_address   = 0x58,
+    .scl_speed_hz     = 100000,
+};
+
+i2c_master_dev_handle_t dev_handle;
+ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
+
+i2c_master_receive(dev_handle, data_rd, DATA_LENGTH, -1);
+```
+
+#### I2C Master Write and Read
+
+Some I2C device needs write configurations before reading data from it. Therefore, an interface called `i2c_master_transmit_receive()` can be used. The chart below explains this principle.
+
+![I2C master write to slave and read from slave](./assets/i2c_master_write_and_read.png)
+
+> Note: no STOP condition bit is inserted between the write and read operations, therefore, this function is suited to read a register from an I2C device.
+
+Simple example for writing and reading from a slave device:
+
+```c
+i2c_device_config_t dev_cfg = {
+    .dev_addr_length  = I2C_ADDR_BIT_LEN_7,
+    .device_address   = 0x58,
+    .scl_speed_hz     = 100000,
+};
+
+i2c_master_dev_handle_t dev_handle;
+ESP_ERROR_CHECK(i2c_master_bus_add_device(bus_handle, &dev_cfg, &dev_handle));
+
+uint8_t buf[20] = {0x20};
+uint8_t buffer[2];
+ESP_ERROR_CHECK(i2c_master_transmit_receive(dev_handle, buf, sizeof(buf), buffer, 2, -1));
 ```
