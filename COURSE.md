@@ -681,9 +681,9 @@ Latency will vary according to the Timer Service task priority and the FreeRTOS 
 
 The RTOS Daemon (Task Service) Task is initialized automatically with the scheduler if the functionality is enabled. It is responsible for receiving and executing the commands over timers and also executing the callback function - and it works pretty much the same as a RTOS task.
 
-### In-Depth Sections
+## In-Depth Sections
 
-#### Memory
+### Memory
 
 > General memory types and concepts (for reference):
 >
@@ -786,7 +786,7 @@ void app_main()
 }
 ```
 
-#### Hardware Abstraction
+### Hardware Abstraction
 
 ESP_IDF provides a group of APIs for hardware abstraction. These APIs allow controlling peripherals at different levels of abstraction, providing more flexibility compared to using only the ESP-IDF drivers to interact with hardware. ESP-IDF Hardware Abstraction is likely to be useful for writing high-performance bare-metal drivers, or attempting to port an ESP chip to another platform.
 
@@ -862,7 +862,7 @@ HAL functions generally have the following characteristics:
 - Some peripherals may have steps that cannot be further abstracted by the HAL, thus end up being a direct wrapper (or macro) for an LL function.
 - Some HAL functions may be placed in IRAM thus may carry an `IRAM_ATTR` or be placed in a separate `xxx_hal_iram.c` source file.
 
-#### Inter-Integrated Circuit (I2C)
+### Inter-Integrated Circuit (I2C)
 
 I2C is a serial, synchronous, multi-device, half-duplex communication protocol that allows co-existence of multiple masters and slaves on the same bus. I2C uses two bidirectional open-drain lines: **serial data line (SDA) and serial clock line (SCL)**, _pulled up_ by resistors.
 
