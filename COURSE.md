@@ -681,6 +681,18 @@ Latency will vary according to the Timer Service task priority and the FreeRTOS 
 
 The RTOS Daemon (Task Service) Task is initialized automatically with the scheduler if the functionality is enabled. It is responsible for receiving and executing the commands over timers and also executing the callback function - and it works pretty much the same as a RTOS task.
 
+### General Purpose Timer (GPTimer)
+
+GPTimer is the driver of ESP32-C6 Timer Group peripheral. The hardware timer features high resolution and flexible alarm action. A timer alarm occurs when the internal counter of a timer reaches a specific target value. At that moment, a user-registered per-timer callback function is triggered.
+
+General-purpose timers are typically used in the following scenarios:
+
+- To run freely like a clock, providing high-resolution timestamps anytime and anywhere.
+- To generate periodic alarms that trigger events at regular intervals.
+- To generate one-shot alarms that respond at a specific target time.
+
+---
+
 ## In-Depth Sections
 
 ### Memory
@@ -726,7 +738,7 @@ void IRAM_ATTR gpio_isr_handler(void *arg)
 }
 ```
 
-There are some possible issutes with placement in IRAM, that may cause problems with IRAM-safe interrupt handlers, namely:
+There are some possible issues with placement in IRAM, that may cause problems with IRAM-safe interrupt handlers, namely:
 
 - Strings or constants inside an `IRAM_ATTR` function may not be placed in RAM automatically. It is possible to use `DRAM_ATTR` attributes to mark these.
 
