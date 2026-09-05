@@ -15,8 +15,8 @@
 static esp_err_t s_init(void);
 static esp_err_t s_release(void);
 static bool IRAM_ATTR s_timer_cb(gptimer_handle_t timer,
-                        const gptimer_alarm_event_data_t *edata,
-                        void *user_data);
+                                const gptimer_alarm_event_data_t *edata,
+                                void *user_data);
 
 static gptimer_handle_t gptimer = NULL;
 
