@@ -1264,3 +1264,113 @@ This will allow the interrupt to run while the cache is disable but will come at
 The factory function `i2c_new_master_bus()` and `i2c_new_slave_device()` are guaranteed to be thread safe by the driver, which means that the functions can be called from different RTOS tasks without protection by extra locks. I2C master operation functions are also guaranteed to be thread safe by bus operation semaphore, and so are I2C slave operation functions.
 
 > Other functions are not guaranteed to be thread-safe, thus you should avoid calling them in different tasks without mutex protection.
+
+### Universal Asynchronous Receiver/Transmitter (UART)
+
+A **Universal Asynchronous Receiver/Transmitter (UART)** is a hardware feature that handles communication, that is, timing requirements and data framing, using widely-adopted asynchronous serial communication interfaces, such as _RS232_, _RS422_, and _RS485_. A UART provides a widely adopted and cheap method to realize **full-duplex or half-duplex** data exchange among different devices.
+
+> The ESP32-C6 chip has 2 UART controllers (or ports), each featuring an identical set of registers to simplify programming and for more flexibility.
+>
+> Each UART controller is independently configurable with parameters such as _baud rate_, _data bit length_, _bit ordering_, _number of stop bits_, _parity bit_, etc. All the regular UART controllers are compatible with UART-enabled devices from various manufacturers and can also support **Infrared Data Association (IrDA) protocols**.
+>
+> The C6 chip has also one low-power (LP) UART controller. It is the cut-down version of regular UART. Usually, LP UART controller support basic UART functionality with a much smaller RAM size, and does not support IrDA or RS485 protocols.
+>
+> The C6 chip also supports using DMA with UART.
+
+- Install the UART drivers, through `uart_driver_install()`, is needed. It has the following parameters to be specified: UART port number, size of RX ring buffer, size of TX ring buffer, event queue size, pointer to store the event queue handle, and flags to allocate an interrupt:
+
+```c
+// Setup UART buffered IO with event queue
+const int uart_buffer_size = (1024 * 2);
+
+// Install UART driver using an event queue here
+ESP_ERROR_CHECK(uart_driver_install(UART_NUM_1, uart_buffer_size, uart_buffer_size, 10, &uart_queue, 0));
+```
+
+- UART communication parameters can be configured all in a single step or individually in multiple steps:
+
+```c
+const uart_port_t uart_num = UART_NUM_1;
+uart_config_t uart_config = {
+    .baud_rate            = 115200,
+    .data_bits            = UART_DATA_8_BITS,
+    .parity               = UART_PARITY_DISABLE,
+    .stop_bits            = UART_STOP_BITS_1,
+    .flow_ctrl            = UART_HW_FLOWCTRL_CTS_RTS,
+    .rx_flow_ctrl_thresh  = 122,
+};
+
+// Configure UART parameters
+ESP_ERROR_CHECK(uart_param_config(uart_num, &uart_config));
+```
+
+- After setting communication parameters, configure the physical GPIO pins to which the other UART device will be connected. For this, call the function `uart_set_pin()` and specify the GPIO pin numbers to which the driver should route TX, TX, RTS, and CTS signals:
+
+```c
+// Set UART pins (TX: IO4, RX: IO5, RTS: IO18, CTS: IO19
+ESP_ERROR_CHECK(uart_set_pin(UART_NUM_1, 4, 5, 18, 19));
+```
+
+**Run UART Communication:** Serial communication is controlled by each UART controller's _finite state machine (FSM)_. The process of sending data involves the following steps:
+
+1. Write data into TX FIFO buffer
+2. FSM serializes the data
+3. FSM send the data out
+
+The process receiving data is similar, with reversed steps:
+
+1. FSM processes an incoming serial stream and parallelizes it
+2. FSM writes the data into RX FIFO buffer
+3. Read the data from RX FIFO buffer
+
+Therefore, an application _only writes and reads data_ from a specific buffer using `uart_write_bytes()` and `uart_read_bytes()` respectively, and the FSM does the rest:
+
+```c
+// Write data to UART
+char test_str[] = "This is a test string.\n";
+uart_write_bytes(uart_num, (const char *)test_str, strlen(test_str));
+
+// Write data to UART, end with a break signal
+uart_write_bytes_with_break(uart_num, "test break\n", strlen("test break\n"), 100);
+
+// Wait for packet to be sent
+const uart_port_t uart_num = UART_NUM_1;
+ESP_ERROR_CHECK(uart_wait_tx_done(uart_num, 100)); // wait timeout is 100 RTOS ticks
+
+// Read data from UART
+const uart_port_t uart_num = UART_NUM_1;
+uint8_t data[128];
+int length = 0;
+ESP_ERROR_CHECK(uart_get_buffered_data_len(uart_num, (size_t *)&length));
+length = uart_read_bytes(uart_num, data, length, 100);
+```
+
+**Using Interrupts:** The UART driver provides a convenient way to handle specific interrupts by wrapping them into corresponding events. Events defined in `uart_event_type_t` can be reported to a user application using the FreeRTOS queue functionality. To receive the events that have happened, call `uart_driver_install()` and get the event queue handle returned from the function.
+
+The processed events include the following:
+
+- **FIFO overflow** (`UART_FIFO_OVF`): The RX FIFO can trigger an interrupt when it receives more data than the FIFO can store. (Optional) Configure the threshold of the FIFO space by entering it in the structure `uart_intr_config_t` and call `uart_intr_config()` to set the configuration, which can help the data stored in the RX FIFO to be processed timely in the driver to avoid FIFO overflow; Enable the interrupts using the functions `uart_enable_rx_intr()`; and disable these interrupts using the corresponding function `uart_disable_rx_intr()`:
+
+```c
+const uart_port_t uart_num = UART_NUM_1;
+
+// Configure a UART interrupt threshold and timeout
+uart_intr_config_t uart_intr = {
+    .intr_enable_mask   = UART_INTR_RXFIFO_FULL | UART_INTR_RXFIFO_TOUT,
+    .rxfifo_full_thresh = 100,
+    .rx_timeout_thresh  = 10,
+};
+ESP_ERROR_CHECK(uart_intr_config(uart_num, &uart_intr));
+
+// Enable UART RX FIFO full threshold and timeout interrupts
+ESP_ERROR_CHECK(uart_enable_rx_intr(uart_num));
+```
+
+- **Pattern detections** (`UART_PATTERN_DET`): An interrupt triggered on detecting a 'pattern' of the same character being received/sent repeatedly. It can be used, e.g., to detect a command string with a specific number of indentical characters (the 'pattern') at the end. The available functions include configure and enable this interrupt using `uart_enable_pattern_det_baud_intr()`; and disable the interrupt using `uart_disable_pattern_det_intr()`:
+
+```c
+// Set UART pattern detect function
+uart_enable_pattern_det_baud_intr(EX_UART_NUM, '+', PATTERN_CHR_NUM, 9, 0, 0);
+```
+
+- **Other events**: The UART driver can report other events such as data receiving (`UART_DATA`), ring buffer full (`UART_BUFFER_FULL`), detecting _NULL_ after the stop bit (`UART_BREAK`), parity check error (`UART_PARITY_ERR`), and frame error (`UART_FRAM_ERR`).
