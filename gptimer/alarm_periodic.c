@@ -33,7 +33,7 @@ void app_main(void)
 
 esp_err_t s_init(void)
 {
-    esp_err_t ret = NULL;
+    esp_err_t ret;
 
     const gpio_config_t gpio_handle = {
         .pin_bit_mask   = (1ULL << BLED_GPIO),
@@ -79,7 +79,7 @@ esp_err_t s_init(void)
 
 esp_err_t s_release(void)
 {
-    esp_err_t ret = NULL;
+    esp_err_t ret;
 
     // Stop timer
     ESP_LOGI(TAG, "Stopping GTimer");
@@ -121,8 +121,7 @@ esp_err_t s_release(void)
         return ret;
     }
 
-    ret = ESP_OK;
-    return ret;
+    return ESP_OK;
 }
 
 bool s_timer_cb(gptimer_handle_t timer,

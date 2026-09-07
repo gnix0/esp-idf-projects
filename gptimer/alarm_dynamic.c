@@ -66,7 +66,7 @@ void app_main(void)
 
 esp_err_t s_init(void *user_data)
 {
-    esp_err_t ret = NULL;
+    esp_err_t ret;
 
     const gpio_config_t gpio_handle = {
         .pin_bit_mask   = (1ULL << BLED_GPIO),
@@ -120,7 +120,7 @@ esp_err_t s_init(void *user_data)
 
 esp_err_t s_release(void)
 {
-    esp_err_t ret = NULL;
+    esp_err_t ret;
 
     // Stop GPTimer
     ESP_LOGI(TAG, "Stopping timer");
